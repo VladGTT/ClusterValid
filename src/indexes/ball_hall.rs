@@ -1,36 +1,40 @@
+use std::iter::zip;
+use std::sync::Arc;
+
 use crate::calc_error::{CalcError, CombineErrors};
 use crate::sender::{Sender, Subscriber};
-use ndarray::{ArcArray1, ArcArray2, ArrayView1, ArrayView2};
+use ndarray::Array2;
 
+use super::helpers::counts::CountsValue;
 use super::helpers::within_group_dispercion::WGDValue;
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub struct BallHallIndexValue {
-    pub val: f64,
+    pub val: Arc<Vec<f64>>,
 }
 #[derive(Default)]
 pub struct Index;
 impl Index {
-    fn compute(&self, wg: &ArrayView2<f64>, cnts: &ArrayView1<usize>) -> Result<f64, CalcError> {
+    fn compute(
+        &self,
+        wg: &Vec<Array2<f64>>,
+        cnts: &Vec<Vec<usize>>,
+    ) -> Result<Vec<f64>, CalcError> {
+        zip(wg, cnts)
+            .into_iter()
+            .map(|(wg, cnts)| self.helper(wg, cnts))
+            .collect()
+    }
+    fn helper(&self, wg: &Array2<f64>, cnts: &Vec<usize>) -> Result<f64, CalcError> {
         let trace_wg = wg.diag().sum();
         let q = cnts.len();
-        // let std = clusters
-        //     .par_iter()
-        //     .map(|(c, arr)| {
-        //         arr.iter()
-        //             .map(|i| (&x.row(*i) - &clusters_centroids[c]).pow2().sum())
-        //             .sum::<f64>()
-        //             / arr.len() as f64
-        //     })
-        //     .sum::<f64>();
-        // let val = std / (clusters.keys().len() as f64);
         Ok(trace_wg / q as f64)
     }
 }
 
 pub struct Node<'a> {
     index: Index,
-    wg: Option<Result<ArcArray2<f64>, CalcError>>,
-    counts: Option<Result<ArcArray1<usize>, CalcError>>,
+    wg: Option<Result<WGDValue, CalcError>>,
+    counts: Option<Result<CountsValue, CalcError>>,
     sender: Sender<'a, BallHallIndexValue>,
 }
 
@@ -40,8 +44,8 @@ impl<'a> Node<'a> {
             let res = match wg.combine(counts) {
                 Ok((wg, cnts)) => self
                     .index
-                    .compute(&wg.view(), &cnts.view())
-                    .map(|val| BallHallIndexValue { val }),
+                    .compute(&wg.val, &cnts.val)
+                    .map(|val| BallHallIndexValue { val: Arc::new(val) }),
                 Err(err) => Err(err),
             };
             self.sender.send_to_subscribers(res);
@@ -59,15 +63,15 @@ impl<'a> Node<'a> {
     }
 }
 
-impl<'a> Subscriber<ArcArray1<usize>> for Node<'a> {
-    fn recieve_data(&mut self, data: Result<ArcArray1<usize>, CalcError>) {
+impl<'a> Subscriber<CountsValue> for Node<'a> {
+    fn recieve_data(&mut self, data: Result<CountsValue, CalcError>) {
         self.counts = Some(data);
         self.process_when_ready();
     }
 }
 impl<'a> Subscriber<WGDValue> for Node<'a> {
     fn recieve_data(&mut self, data: Result<WGDValue, CalcError>) {
-        self.wg = Some(data.map(|v| v.val));
+        self.wg = Some(data);
         self.process_when_ready();
     }
 }

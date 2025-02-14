@@ -1,15 +1,17 @@
-use std::iter::zip;
+use std::{iter::zip, sync::Arc};
 
 use crate::{
     calc_error::CalcError,
     sender::{Sender, Subscriber},
 };
-use ndarray::{ArcArray1, Array2, ArrayView1, ArrayView2, Axis};
+use ndarray::{ArcArray1, Array1, Array2, ArrayView1, ArrayView2, Axis};
+
+use super::raw_data::RawDataValue;
 #[derive(Debug, Clone)]
 pub struct ScatValue {
-    pub val: f64,
-    pub clusters_vars: ArcArray1<f64>,
-    pub var: f64,
+    pub val: Arc<Vec<f64>>,
+    pub clusters_vars: Arc<Vec<Array1<f64>>>,
+    pub var: Arc<Vec<f64>>,
 }
 #[derive(Default)]
 pub struct Index;
@@ -17,8 +19,24 @@ impl Index {
     pub fn compute(
         &self,
         x: &ArrayView2<f64>,
-        y: &ArrayView1<i32>,
-    ) -> Result<(f64, ArcArray1<f64>, f64), CalcError> {
+        y: &ArrayView2<usize>,
+    ) -> Result<(Vec<f64>, Vec<Array1<f64>>, Vec<f64>), CalcError> {
+        y.columns()
+            .into_iter()
+            .map(|c| self.helper(x, &c))
+            .collect::<Result<Vec<(f64, Array1<f64>, f64)>, CalcError>>()
+            .map(|v| {
+                let (first, rest): (Vec<_>, Vec<_>) =
+                    v.into_iter().map(|(x, y, z)| (x, (y, z))).unzip();
+                let (second, third): (Vec<_>, Vec<_>) = rest.into_iter().unzip();
+                (first, second, third)
+            })
+    }
+    fn helper(
+        &self,
+        x: &ArrayView2<f64>,
+        y: &ArrayView1<usize>,
+    ) -> Result<(f64, Array1<f64>, f64), CalcError> {
         let var = x.var_axis(Axis(0), 0.);
         let q = *y.iter().max().ok_or("Cant get max cluster index")? as usize + 1;
         let mut clusters_vars: Array2<f64> = Array2::zeros((q, x.ncols()));
@@ -39,7 +57,7 @@ impl Index {
         let clusters_vars = clusters_vars.dot(&clusters_vars.t()).diag().sqrt();
         let clusters_vars_mean = clusters_vars.mean().ok_or("Cant calc mean")?;
         let val = clusters_vars_mean / var;
-        Ok((val, clusters_vars.to_shared(), var))
+        Ok((val, clusters_vars, var))
     }
 }
 pub struct Node<'a> {
@@ -55,21 +73,17 @@ impl<'a> Node<'a> {
     }
 }
 
-impl<'a> Subscriber<(ArrayView2<'a, f64>, ArrayView1<'a, i32>)> for Node<'a> {
-    fn recieve_data(
-        &mut self,
-        data: Result<(ArrayView2<'a, f64>, ArrayView1<'a, i32>), CalcError>,
-    ) {
+impl<'a> Subscriber<RawDataValue<'a>> for Node<'a> {
+    fn recieve_data(&mut self, data: Result<RawDataValue<'a>, CalcError>) {
         let res = match data {
-            Ok((ref x, ref y)) => {
-                self.index
-                    .compute(x, y)
-                    .map(|(val, clusters_vars, var)| ScatValue {
-                        val,
-                        clusters_vars,
-                        var,
-                    })
-            }
+            Ok(rd) => self
+                .index
+                .compute(&rd.x, &rd.y)
+                .map(|(val, clusters_vars, var)| ScatValue {
+                    val: Arc::new(val),
+                    clusters_vars: Arc::new(clusters_vars),
+                    var: Arc::new(var),
+                }),
             Err(err) => Err(err),
         };
         self.sender.send_to_subscribers(res);

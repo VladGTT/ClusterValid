@@ -3,7 +3,7 @@ use assert_float_eq::*;
 use ndarray::{arr1, arr2, prelude::*};
 
 const ACCURACY: f64 = 1e-5;
-fn initialize() -> (Array2<f64>, Array1<i32>) {
+fn initialize() -> (Array2<f64>, Array2<usize>) {
     (
         arr2(&[
             [-7.72642091, -8.39495682],
@@ -107,11 +107,107 @@ fn initialize() -> (Array2<f64>, Array1<i32>) {
             [-5.79657595, -5.82630754],
             [-3.34841515, 8.70507375],
         ]),
-        arr1(&[
-            1, 2, 0, 2, 1, 2, 0, 2, 2, 0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 0, 2, 1, 1,
-            1, 1, 2, 2, 1, 0, 0, 0, 0, 2, 2, 1, 0, 2, 0, 0, 2, 1, 1, 1, 2, 2, 2, 0, 1, 1, 1, 0, 0,
-            2, 0, 1, 2, 1, 2, 1, 1, 2, 1, 2, 2, 2, 1, 1, 0, 2, 1, 2, 1, 2, 2, 0, 2, 0, 1, 0, 0, 0,
-            2, 0, 2, 2, 2, 0, 2, 0, 0, 0, 2, 1, 0,
+        arr2(&[
+            [1],
+            [2],
+            [0],
+            [2],
+            [1],
+            [2],
+            [0],
+            [2],
+            [2],
+            [0],
+            [0],
+            [1],
+            [1],
+            [0],
+            [0],
+            [1],
+            [1],
+            [0],
+            [1],
+            [1],
+            [0],
+            [1],
+            [1],
+            [0],
+            [0],
+            [0],
+            [2],
+            [1],
+            [1],
+            [1],
+            [1],
+            [2],
+            [2],
+            [1],
+            [0],
+            [0],
+            [0],
+            [0],
+            [2],
+            [2],
+            [1],
+            [0],
+            [2],
+            [0],
+            [0],
+            [2],
+            [1],
+            [1],
+            [1],
+            [2],
+            [2],
+            [2],
+            [0],
+            [1],
+            [1],
+            [1],
+            [0],
+            [0],
+            [2],
+            [0],
+            [1],
+            [2],
+            [1],
+            [2],
+            [1],
+            [1],
+            [2],
+            [1],
+            [2],
+            [2],
+            [2],
+            [1],
+            [1],
+            [0],
+            [2],
+            [1],
+            [2],
+            [1],
+            [2],
+            [2],
+            [0],
+            [2],
+            [0],
+            [1],
+            [0],
+            [0],
+            [0],
+            [2],
+            [0],
+            [2],
+            [2],
+            [2],
+            [0],
+            [2],
+            [0],
+            [0],
+            [0],
+            [2],
+            [1],
+            [0],
         ]),
     )
 }
@@ -123,11 +219,11 @@ fn test_ball_hall_index() {
     let tree = IndexTreeBuilder::default().add_ball_hall().finish();
 
     let start = std::time::Instant::now();
-    let res = tree.compute((x, y));
+    let res = tree.compute((x, y).into());
     let end = std::time::Instant::now();
     //
     println!("Duration {} milisecs", (end - start).as_millis());
-    assert_float_absolute_eq!(res.ball_hall.unwrap().unwrap().val, 1.71928, ACCURACY)
+    assert_float_absolute_eq!(res.ball_hall.unwrap().unwrap().val[0], 1.71928, ACCURACY)
 }
 #[test]
 fn test_silhouette_score() {
@@ -136,12 +232,12 @@ fn test_silhouette_score() {
     let tree = IndexTreeBuilder::default().add_silhouette().finish();
 
     let start = std::time::Instant::now();
-    let res = tree.compute((x, y));
+    let res = tree.compute((x, y).into());
     let end = std::time::Instant::now();
     //
     println!("Duration {} milisecs", (end - start).as_millis());
     assert_float_absolute_eq!(
-        res.silhouette.unwrap().unwrap().val,
+        res.silhouette.unwrap().unwrap().val[0],
         0.8469881221532085,
         ACCURACY
     )
@@ -153,12 +249,12 @@ fn test_davies_bouldin_score() {
     let tree = IndexTreeBuilder::default().add_davies_bouldin().finish();
 
     let start = std::time::Instant::now();
-    let res = tree.compute((x, y));
+    let res = tree.compute((x, y).into());
     let end = std::time::Instant::now();
     //
     println!("Duration {} milisecs", (end - start).as_millis());
     assert_float_absolute_eq!(
-        res.davies_bouldin.unwrap().unwrap().val,
+        res.davies_bouldin.unwrap().unwrap().val[0],
         0.21374667882527568,
         ACCURACY
     )
@@ -170,12 +266,12 @@ fn test_calinski_harabasz_score() {
     let tree = IndexTreeBuilder::default().add_calinski_harabasz().finish();
 
     let start = std::time::Instant::now();
-    let res = tree.compute((x, y));
+    let res = tree.compute((x, y).into());
     let end = std::time::Instant::now();
     //
     println!("Duration {} milisecs", (end - start).as_millis());
     assert_float_absolute_eq!(
-        res.calinski_harabasz.unwrap().unwrap().val,
+        res.calinski_harabasz.unwrap().unwrap().val[0],
         1778.0880985088447,
         ACCURACY
     )
@@ -187,11 +283,11 @@ fn test_c_index() {
     let tree = IndexTreeBuilder::default().add_c_index().finish();
 
     let start = std::time::Instant::now();
-    let res = tree.compute((x, y));
+    let res = tree.compute((x, y).into());
     let end = std::time::Instant::now();
     //
     println!("Duration {} milisecs", (end - start).as_millis());
-    assert_float_absolute_eq!(res.c_index.unwrap().unwrap().val, 0.0, ACCURACY)
+    assert_float_absolute_eq!(res.c_index.unwrap().unwrap().val[0], 0.0, ACCURACY)
 }
 #[test]
 fn test_gamma_index() {
@@ -201,11 +297,11 @@ fn test_gamma_index() {
     let tree = IndexTreeBuilder::default().add_gamma().finish();
 
     let start = std::time::Instant::now();
-    let res = tree.compute((x, y));
+    let res = tree.compute((x, y).into());
     let end = std::time::Instant::now();
     //
     println!("Duration {} milisecs", (end - start).as_millis());
-    assert_float_absolute_eq!(res.gamma.unwrap().unwrap().val, 1.0, ACCURACY)
+    assert_float_absolute_eq!(res.gamma.unwrap().unwrap().val[0], 1.0, ACCURACY)
 }
 
 #[test]
@@ -216,13 +312,13 @@ fn test_rubin_index() {
     let tree = IndexTreeBuilder::default().add_rubin().finish();
 
     let start = std::time::Instant::now();
-    let res = tree.compute((x, y));
+    let res = tree.compute((x, y).into());
     let end = std::time::Instant::now();
     //
     println!("Duration {} milisecs", (end - start).as_millis());
     // assert_float_absolute_eq!(res.rubin.unwrap().unwrap().val, 1099.786, ACCURACY)
     assert_float_absolute_eq!(
-        res.rubin.unwrap().unwrap().val,
+        res.rubin.unwrap().unwrap().val[0],
         1099.7859600203512,
         ACCURACY
     )
@@ -235,13 +331,13 @@ fn test_mariott_index() {
     let tree = IndexTreeBuilder::default().add_mariott().finish();
 
     let start = std::time::Instant::now();
-    let res = tree.compute((x, y));
+    let res = tree.compute((x, y).into());
     let end = std::time::Instant::now();
     //
     println!("Duration {} milisecs", (end - start).as_millis());
     // assert_float_absolute_eq!(res.mariott.unwrap().unwrap().val, 65223.64, ACCURACY)
     assert_float_absolute_eq!(
-        res.mariott.unwrap().unwrap().val,
+        res.mariott.unwrap().unwrap().val[0],
         65223.64251427408,
         ACCURACY
     )
@@ -254,12 +350,16 @@ fn test_scott_index() {
     let tree = IndexTreeBuilder::default().add_scott().finish();
 
     let start = std::time::Instant::now();
-    let res = tree.compute((x, y));
+    let res = tree.compute((x, y).into());
     let end = std::time::Instant::now();
     //
     println!("Duration {} milisecs", (end - start).as_millis());
     // assert_float_absolute_eq!(res.scott.unwrap().unwrap().val, 700.2871, ACCURACY)
-    assert_float_absolute_eq!(res.scott.unwrap().unwrap().val, 700.2870858053287, ACCURACY)
+    assert_float_absolute_eq!(
+        res.scott.unwrap().unwrap().val[0],
+        700.2870858053287,
+        ACCURACY
+    )
 }
 #[test]
 fn test_friedman_index() {
@@ -269,11 +369,11 @@ fn test_friedman_index() {
     let tree = IndexTreeBuilder::default().add_friedman().finish();
 
     let start = std::time::Instant::now();
-    let res = tree.compute((x, y));
+    let res = tree.compute((x, y).into());
     let end = std::time::Instant::now();
     //
     println!("Duration {} milisecs", (end - start).as_millis());
-    assert_float_absolute_eq!(res.friedman.unwrap().unwrap().val, 70.47645, ACCURACY)
+    assert_float_absolute_eq!(res.friedman.unwrap().unwrap().val[0], 70.47645, ACCURACY)
 }
 #[test]
 fn test_tau_index() {
@@ -292,12 +392,12 @@ fn test_tau_index() {
     let tree = IndexTreeBuilder::default().add_tau().finish();
 
     let start = std::time::Instant::now();
-    let res = tree.compute((x.view(), y.view()));
+    let res = tree.compute((x, y).into());
     let end = std::time::Instant::now();
     //
     println!("Duration {} milisecs", (end - start).as_millis());
     // assert_float_absolute_eq!(res.tau.unwrap().unwrap().val, 0.6060916, ACCURACY)
-    assert_float_absolute_eq!(res.tau.unwrap().unwrap().val, -1.316936e-05, ACCURACY)
+    assert_float_absolute_eq!(res.tau.unwrap().unwrap().val[0], -1.316936e-05, ACCURACY)
 }
 #[test]
 fn test_dunn_index() {
@@ -307,11 +407,11 @@ fn test_dunn_index() {
     let tree = IndexTreeBuilder::default().add_dunn().finish();
 
     let start = std::time::Instant::now();
-    let res = tree.compute((x, y));
+    let res = tree.compute((x, y).into());
     let end = std::time::Instant::now();
     //
     println!("Duration {} milisecs", (end - start).as_millis());
-    assert_float_absolute_eq!(res.dunn.unwrap().unwrap().val, 1.320007, ACCURACY)
+    assert_float_absolute_eq!(res.dunn.unwrap().unwrap().val[0], 1.320007, ACCURACY)
 }
 #[test]
 fn test_tracew_index() {
@@ -321,13 +421,13 @@ fn test_tracew_index() {
     let tree = IndexTreeBuilder::default().add_tracew().finish();
 
     let start = std::time::Instant::now();
-    let res = tree.compute((x, y));
+    let res = tree.compute((x, y).into());
     let end = std::time::Instant::now();
     //
     println!("Duration {} milisecs", (end - start).as_millis());
     // assert_float_absolute_eq!(res.tracew.unwrap().unwrap().val, 171.911, ACCURACY)
     assert_float_absolute_eq!(
-        res.tracew.unwrap().unwrap().val,
+        res.tracew.unwrap().unwrap().val[0],
         171.91098468600785,
         ACCURACY
     )
@@ -340,11 +440,11 @@ fn test_gplus_index() {
     let tree = IndexTreeBuilder::default().add_gplus().finish();
 
     let start = std::time::Instant::now();
-    let res = tree.compute((x, y));
+    let res = tree.compute((x, y).into());
     let end = std::time::Instant::now();
     //
     println!("Duration {} milisecs", (end - start).as_millis());
-    assert_float_absolute_eq!(res.gplus.unwrap().unwrap().val, 0.0, ACCURACY)
+    assert_float_absolute_eq!(res.gplus.unwrap().unwrap().val[0], 0.0, ACCURACY)
 }
 #[test]
 fn test_ratkowsky_index() {
@@ -354,11 +454,11 @@ fn test_ratkowsky_index() {
     let tree = IndexTreeBuilder::default().add_ratkowsky().finish();
 
     let start = std::time::Instant::now();
-    let res = tree.compute((x, y));
+    let res = tree.compute((x, y).into());
     let end = std::time::Instant::now();
     //
     println!("Duration {} milisecs", (end - start).as_millis());
-    assert_float_absolute_eq!(res.ratkowsky.unwrap().unwrap().val, 0.5692245, ACCURACY)
+    assert_float_absolute_eq!(res.ratkowsky.unwrap().unwrap().val[0], 0.5692245, ACCURACY)
 }
 #[test]
 fn test_ptbserial_index() {
@@ -368,11 +468,11 @@ fn test_ptbserial_index() {
     let tree = IndexTreeBuilder::default().add_ptbiserial().finish();
 
     let start = std::time::Instant::now();
-    let res = tree.compute((x, y));
+    let res = tree.compute((x, y).into());
     let end = std::time::Instant::now();
     //
     println!("Duration {} milisecs", (end - start).as_millis());
-    assert_float_absolute_eq!(res.ptbiserial.unwrap().unwrap().val, -5.571283, ACCURACY)
+    assert_float_absolute_eq!(res.ptbiserial.unwrap().unwrap().val[0], -5.571283, ACCURACY)
 }
 #[test]
 fn test_mcclain_index() {
@@ -382,11 +482,11 @@ fn test_mcclain_index() {
     let tree = IndexTreeBuilder::default().add_mcclain().finish();
 
     let start = std::time::Instant::now();
-    let res = tree.compute((x, y));
+    let res = tree.compute((x, y).into());
     let end = std::time::Instant::now();
     //
     println!("Duration {} milisecs", (end - start).as_millis());
-    assert_float_absolute_eq!(res.mcclain.unwrap().unwrap().val, 0.1243807, ACCURACY)
+    assert_float_absolute_eq!(res.mcclain.unwrap().unwrap().val[0], 0.1243807, ACCURACY)
 }
 //
 //
@@ -403,12 +503,12 @@ fn test_trcovw_index() {
     let tree = IndexTreeBuilder::default().add_trcovw().finish();
 
     let start = std::time::Instant::now();
-    let res = tree.compute((x, y));
+    let res = tree.compute((x, y).into());
     let end = std::time::Instant::now();
     //
     println!("Duration {} milisecs", (end - start).as_millis());
     assert_float_absolute_eq!(
-        res.trcovw.unwrap().unwrap().val,
+        res.trcovw.unwrap().unwrap().val[0],
         3428.8903760801304,
         ACCURACY
     )
@@ -421,13 +521,13 @@ fn test_sd_index() {
     let tree = IndexTreeBuilder::default().add_sd().finish();
 
     let start = std::time::Instant::now();
-    let res = tree.compute((x, y));
+    let res = tree.compute((x, y).into());
     let end = std::time::Instant::now();
     //
     println!("Duration {} milisecs", (end - start).as_millis());
 
     assert_float_absolute_eq!(
-        res.sd.unwrap().unwrap().val,
+        res.sd.unwrap().unwrap().val[0],
         0.02584332 + 0.1810231,
         ACCURACY
     )
@@ -440,9 +540,24 @@ fn test_sdbw_index() {
     let tree = IndexTreeBuilder::default().add_sdbw().finish();
 
     let start = std::time::Instant::now();
-    let res = tree.compute((x, y));
+    let res = tree.compute((x, y).into());
     let end = std::time::Instant::now();
     //
     println!("Duration {} milisecs", (end - start).as_millis());
-    assert_float_absolute_eq!(res.sdbw.unwrap().unwrap().val, 0.02584332, ACCURACY)
+    assert_float_absolute_eq!(res.sdbw.unwrap().unwrap().val[0], 0.02584332, ACCURACY)
+}
+#[test]
+fn test_ccc_index() {
+    let (x, y) = initialize();
+    let (x, y) = (x.view(), y.view());
+
+    let tree = IndexTreeBuilder::default().add_ccc().finish();
+
+    let start = std::time::Instant::now();
+    let res = tree.compute((x, y).into());
+    let end = std::time::Instant::now();
+    //
+    println!("Duration {} milisecs", (end - start).as_millis());
+    println!("Value: {:?}", res.ccc.unwrap().unwrap().val);
+    panic!("Just panic");
 }

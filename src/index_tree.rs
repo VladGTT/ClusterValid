@@ -6,7 +6,10 @@ use crate::indexes::dunn::DunnIndexValue;
 use crate::indexes::friedman::FriedmanIndexValue;
 use crate::indexes::gamma::GammaIndexValue;
 use crate::indexes::gplus::GplusIndexValue;
-use crate::indexes::helpers::s_plus_and_minus::SPlusAndMinusNode;
+use crate::indexes::helpers::counts::CountsValue;
+use crate::indexes::helpers::pairs_and_distances::PairsAndDistancesValue;
+use crate::indexes::helpers::raw_data::RawDataValue;
+use crate::indexes::helpers::s_plus_and_minus::{SPlusAndMinusNode, SPlusAndMinusValue};
 use crate::indexes::helpers::scat::ScatValue;
 use crate::indexes::helpers::total_dispercion::TDValue;
 use crate::indexes::hubert::HubertIndexValue;
@@ -23,6 +26,7 @@ use crate::indexes::tau::TauIndexValue;
 use crate::indexes::tracew::TracewIndexValue;
 use crate::indexes::trcovw::TrcovwIndexValue;
 
+use crate::indexes::ccc::CCCIndexValue;
 use crate::indexes::helpers::between_group_dispercion::BGDValue;
 use crate::indexes::helpers::clusters_centroids::ClustersCentroidsValue;
 use crate::indexes::helpers::within_group_dispercion::WGDValue;
@@ -33,6 +37,7 @@ use crate::{
         ball_hall::Node as BallHallNode,
         c_index::Node as CIndexNode,
         calinski_harabasz::Node as CalinskiHarabaszNode,
+        ccc::Node as CCCNode,
         davies_bouldin::Node as DaviesBouldinNode,
         dunn::Node as DunnNode,
         friedman::Node as FriedmanNode,
@@ -59,7 +64,6 @@ use crate::{
     },
     sender::{Sender, Subscriber},
 };
-use ndarray::{ArcArray1, ArrayView1, ArrayView2};
 use pyo3::{pyclass, pymethods};
 use std::sync::{Arc, Mutex};
 
@@ -87,107 +91,112 @@ pub struct IndexTreeReturnValue {
     pub hubert: Option<Result<HubertIndexValue, CalcError>>,
     pub sd: Option<Result<SDIndexValue, CalcError>>,
     pub sdbw: Option<Result<SDBWIndexValue, CalcError>>,
+    pub ccc: Option<Result<CCCIndexValue, CalcError>>,
 }
 
-#[pymethods]
-impl IndexTreeReturnValue {
-    #[getter]
-    fn get_ball_hall(&self) -> Result<Option<f64>, CalcError> {
-        self.ball_hall.clone().map(|f| f.map(|v| v.val)).transpose()
-    }
-    #[getter]
-    fn get_davies_bouldin(&self) -> Result<Option<f64>, CalcError> {
-        self.davies_bouldin
-            .clone()
-            .map(|f| f.map(|v| v.val))
-            .transpose()
-    }
-    #[getter]
-    fn get_c_index(&self) -> Result<Option<f64>, CalcError> {
-        self.c_index.clone().map(|f| f.map(|v| v.val)).transpose()
-    }
-    #[getter]
-    fn get_calinski_harabasz(&self) -> Result<Option<f64>, CalcError> {
-        self.calinski_harabasz
-            .clone()
-            .map(|f| f.map(|v| v.val))
-            .transpose()
-    }
-    #[getter]
-    fn get_dunn(&self) -> Result<Option<f64>, CalcError> {
-        self.dunn.clone().map(|f| f.map(|v| v.val)).transpose()
-    }
-    #[getter]
-    fn get_silhouette(&self) -> Result<Option<f64>, CalcError> {
-        self.silhouette
-            .clone()
-            .map(|f| f.map(|v| v.val))
-            .transpose()
-    }
-    #[getter]
-    fn get_rubin(&self) -> Result<Option<f64>, CalcError> {
-        self.rubin.clone().map(|f| f.map(|v| v.val)).transpose()
-    }
-    #[getter]
-    fn get_mariott(&self) -> Result<Option<f64>, CalcError> {
-        self.mariott.clone().map(|f| f.map(|v| v.val)).transpose()
-    }
-    #[getter]
-    fn get_scott(&self) -> Result<Option<f64>, CalcError> {
-        self.scott.clone().map(|f| f.map(|v| v.val)).transpose()
-    }
-    #[getter]
-    fn get_friedman(&self) -> Result<Option<f64>, CalcError> {
-        self.friedman.clone().map(|f| f.map(|v| v.val)).transpose()
-    }
-    #[getter]
-    fn get_tau(&self) -> Result<Option<f64>, CalcError> {
-        self.friedman.clone().map(|f| f.map(|v| v.val)).transpose()
-    }
-    #[getter]
-    fn get_gamma(&self) -> Result<Option<f64>, CalcError> {
-        self.gamma.clone().map(|f| f.map(|v| v.val)).transpose()
-    }
-    #[getter]
-    fn get_gplus(&self) -> Result<Option<f64>, CalcError> {
-        self.gplus.clone().map(|f| f.map(|v| v.val)).transpose()
-    }
-    #[getter]
-    fn get_tracew(&self) -> Result<Option<f64>, CalcError> {
-        self.tracew.clone().map(|f| f.map(|v| v.val)).transpose()
-    }
-    #[getter]
-    fn get_mcclain(&self) -> Result<Option<f64>, CalcError> {
-        self.mcclain.clone().map(|f| f.map(|v| v.val)).transpose()
-    }
-    #[getter]
-    fn get_ptbiserial(&self) -> Result<Option<f64>, CalcError> {
-        self.ptbiserial
-            .clone()
-            .map(|f| f.map(|v| v.val))
-            .transpose()
-    }
-    #[getter]
-    fn get_ratkowsky(&self) -> Result<Option<f64>, CalcError> {
-        self.ratkowsky.clone().map(|f| f.map(|v| v.val)).transpose()
-    }
-    #[getter]
-    fn get_trcovw(&self) -> Result<Option<f64>, CalcError> {
-        self.trcovw.clone().map(|f| f.map(|v| v.val)).transpose()
-    }
-    #[getter]
-    fn get_hubertw(&self) -> Result<Option<f64>, CalcError> {
-        self.hubert.clone().map(|f| f.map(|v| v.val)).transpose()
-    }
-    #[getter]
-    fn get_sd(&self) -> Result<Option<f64>, CalcError> {
-        self.sd.clone().map(|f| f.map(|v| v.val)).transpose()
-    }
-    #[getter]
-    fn get_sdbw(&self) -> Result<Option<f64>, CalcError> {
-        self.sdbw.clone().map(|f| f.map(|v| v.val)).transpose()
-    }
-}
+// #[pymethods]
+// impl IndexTreeReturnValue {
+//     #[getter]
+//     fn get_ball_hall(&self) -> Result<Option<Vec<f64>>, CalcError> {
+//         self.ball_hall.clone().map(|f| f.map(|v| v.val)).transpose()
+//     }
+//     #[getter]
+//     fn get_davies_bouldin(&self) -> Result<Option<f64>, CalcError> {
+//         self.davies_bouldin
+//             .clone()
+//             .map(|f| f.map(|v| v.val))
+//             .transpose()
+//     }
+//     #[getter]
+//     fn get_c_index(&self) -> Result<Option<f64>, CalcError> {
+//         self.c_index.clone().map(|f| f.map(|v| v.val)).transpose()
+//     }
+//     #[getter]
+//     fn get_calinski_harabasz(&self) -> Result<Option<f64>, CalcError> {
+//         self.calinski_harabasz
+//             .clone()
+//             .map(|f| f.map(|v| v.val))
+//             .transpose()
+//     }
+//     #[getter]
+//     fn get_dunn(&self) -> Result<Option<f64>, CalcError> {
+//         self.dunn.clone().map(|f| f.map(|v| v.val)).transpose()
+//     }
+//     #[getter]
+//     fn get_silhouette(&self) -> Result<Option<f64>, CalcError> {
+//         self.silhouette
+//             .clone()
+//             .map(|f| f.map(|v| v.val))
+//             .transpose()
+//     }
+//     #[getter]
+//     fn get_rubin(&self) -> Result<Option<f64>, CalcError> {
+//         self.rubin.clone().map(|f| f.map(|v| v.val)).transpose()
+//     }
+//     #[getter]
+//     fn get_mariott(&self) -> Result<Option<f64>, CalcError> {
+//         self.mariott.clone().map(|f| f.map(|v| v.val)).transpose()
+//     }
+//     #[getter]
+//     fn get_scott(&self) -> Result<Option<f64>, CalcError> {
+//         self.scott.clone().map(|f| f.map(|v| v.val)).transpose()
+//     }
+//     #[getter]
+//     fn get_friedman(&self) -> Result<Option<f64>, CalcError> {
+//         self.friedman.clone().map(|f| f.map(|v| v.val)).transpose()
+//     }
+//     #[getter]
+//     fn get_tau(&self) -> Result<Option<f64>, CalcError> {
+//         self.friedman.clone().map(|f| f.map(|v| v.val)).transpose()
+//     }
+//     #[getter]
+//     fn get_gamma(&self) -> Result<Option<f64>, CalcError> {
+//         self.gamma.clone().map(|f| f.map(|v| v.val)).transpose()
+//     }
+//     #[getter]
+//     fn get_gplus(&self) -> Result<Option<f64>, CalcError> {
+//         self.gplus.clone().map(|f| f.map(|v| v.val)).transpose()
+//     }
+//     #[getter]
+//     fn get_tracew(&self) -> Result<Option<f64>, CalcError> {
+//         self.tracew.clone().map(|f| f.map(|v| v.val)).transpose()
+//     }
+//     #[getter]
+//     fn get_mcclain(&self) -> Result<Option<f64>, CalcError> {
+//         self.mcclain.clone().map(|f| f.map(|v| v.val)).transpose()
+//     }
+//     #[getter]
+//     fn get_ptbiserial(&self) -> Result<Option<f64>, CalcError> {
+//         self.ptbiserial
+//             .clone()
+//             .map(|f| f.map(|v| v.val))
+//             .transpose()
+//     }
+//     #[getter]
+//     fn get_ratkowsky(&self) -> Result<Option<f64>, CalcError> {
+//         self.ratkowsky.clone().map(|f| f.map(|v| v.val)).transpose()
+//     }
+//     #[getter]
+//     fn get_trcovw(&self) -> Result<Option<f64>, CalcError> {
+//         self.trcovw.clone().map(|f| f.map(|v| v.val)).transpose()
+//     }
+//     #[getter]
+//     fn get_hubertw(&self) -> Result<Option<f64>, CalcError> {
+//         self.hubert.clone().map(|f| f.map(|v| v.val)).transpose()
+//     }
+//     #[getter]
+//     fn get_sd(&self) -> Result<Option<f64>, CalcError> {
+//         self.sd.clone().map(|f| f.map(|v| v.val)).transpose()
+//     }
+//     #[getter]
+//     fn get_sdbw(&self) -> Result<Option<f64>, CalcError> {
+//         self.sdbw.clone().map(|f| f.map(|v| v.val)).transpose()
+//     }
+//     #[getter]
+//     fn get_ccc(&self) -> Result<Option<f64>, CalcError> {
+//         self.ccc.clone().map(|f| f.map(|v| v.val)).transpose()
+//     }
+// }
 
 impl Subscriber<BallHallIndexValue> for IndexTreeReturnValue {
     fn recieve_data(&mut self, data: Result<BallHallIndexValue, CalcError>) {
@@ -294,12 +303,17 @@ impl Subscriber<SDBWIndexValue> for IndexTreeReturnValue {
         self.sdbw = Some(data);
     }
 }
+impl Subscriber<CCCIndexValue> for IndexTreeReturnValue {
+    fn recieve_data(&mut self, data: Result<CCCIndexValue, CalcError>) {
+        self.ccc = Some(data);
+    }
+}
 pub struct IndexTree<'a> {
     raw_data: RawDataNode<'a>,
     retval: Arc<Mutex<IndexTreeReturnValue>>,
 }
 impl<'a> IndexTree<'a> {
-    pub fn compute(self, data: (ArrayView2<'a, f64>, ArrayView1<'a, i32>)) -> IndexTreeReturnValue {
+    pub fn compute(self, data: RawDataValue<'a>) -> IndexTreeReturnValue {
         self.raw_data.compute(data);
         match self.retval.lock() {
             Ok(lock) => lock.clone(),
@@ -312,13 +326,13 @@ impl<'a> IndexTree<'a> {
 pub struct IndexTreeBuilder<'a> {
     retval: Arc<Mutex<IndexTreeReturnValue>>,
     clusters_centroids_sender: Sender<'a, ClustersCentroidsValue>,
-    raw_data_sender: Sender<'a, (ArrayView2<'a, f64>, ArrayView1<'a, i32>)>,
-    pairs_and_distances_sender: Sender<'a, (ArcArray1<i8>, ArcArray1<f64>)>,
-    counts_sender: Sender<'a, ArcArray1<usize>>,
+    raw_data_sender: Sender<'a, RawDataValue<'a>>,
+    pairs_and_distances_sender: Sender<'a, PairsAndDistancesValue>,
+    counts_sender: Sender<'a, CountsValue>,
     wg_sender: Sender<'a, WGDValue>,
     bg_sender: Sender<'a, BGDValue>,
     td_sender: Sender<'a, TDValue>,
-    s_plus_and_minus_sender: Sender<'a, (usize, usize, usize)>,
+    s_plus_and_minus_sender: Sender<'a, SPlusAndMinusValue>,
     scat_sender: Sender<'a, ScatValue>,
 }
 
@@ -498,6 +512,14 @@ impl<'a> IndexTreeBuilder<'a> {
         self.scat_sender.add_subscriber(sdbw.clone());
 
         self.clusters_centroids_sender.add_subscriber(sdbw);
+        self
+    }
+    pub fn add_ccc(mut self) -> Self {
+        let ccc = Arc::new(Mutex::new(CCCNode::new(Sender::new(vec![self
+            .retval
+            .clone()]))));
+
+        self.raw_data_sender.add_subscriber(ccc.clone());
         self
     }
     pub fn finish(mut self) -> IndexTree<'a> {

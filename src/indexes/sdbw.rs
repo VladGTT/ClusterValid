@@ -1,15 +1,17 @@
 use std::iter::zip;
 
 use crate::calc_error::{CalcError, CombineErrors};
-use ndarray::{ArcArray1, ArcArray2, ArrayView1, ArrayView2};
+use ndarray::{Array1, Array2, ArrayView1, ArrayView2};
 
+use super::helpers::{
+    clusters_centroids::ClustersCentroidsValue, raw_data::RawDataValue, scat::ScatValue,
+};
 use crate::sender::{Sender, Subscriber};
+use std::sync::Arc;
 
-use super::helpers::{clusters_centroids::ClustersCentroidsValue, scat::ScatValue};
-
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub struct SDBWIndexValue {
-    pub val: f64,
+    pub val: Arc<Vec<f64>>,
 }
 #[derive(Default)]
 pub struct Index;
@@ -17,11 +19,27 @@ pub struct Index;
 impl Index {
     pub fn compute(
         &self,
-        scat: &f64,
-        centroid_vars: &ArrayView1<f64>,
+        scat: &Vec<f64>,
+        centroid_vars: &Vec<Array1<f64>>,
         x: &ArrayView2<f64>,
-        y: &ArrayView1<i32>,
-        clusters_centroids: &ArrayView2<f64>,
+        y: &ArrayView2<usize>,
+        clusters_centroids: &Vec<Array2<f64>>,
+    ) -> Result<Vec<f64>, CalcError> {
+        zip(
+            zip(scat, centroid_vars),
+            zip(y.columns(), clusters_centroids),
+        )
+        .into_iter()
+        .map(|((s, cv), (y, ctrds))| self.helper(s, cv, x, &y, ctrds))
+        .collect()
+    }
+    fn helper(
+        &self,
+        scat: &f64,
+        centroid_vars: &Array1<f64>,
+        x: &ArrayView2<f64>,
+        y: &ArrayView1<usize>,
+        clusters_centroids: &Array2<f64>,
     ) -> Result<f64, CalcError> {
         let q = clusters_centroids.nrows();
         let stdev = centroid_vars.sum().sqrt() / q as f64;
@@ -50,7 +68,7 @@ impl Index {
     fn density<F>(
         stdev: f64,
         x: &ArrayView2<f64>,
-        y: &ArrayView1<i32>,
+        y: &ArrayView1<usize>,
         predicat: F,
         center: ArrayView1<f64>,
     ) -> usize
@@ -70,9 +88,9 @@ impl Index {
 
 pub struct Node<'a> {
     index: Index,
-    raw_data: Option<Result<(ArrayView2<'a, f64>, ArrayView1<'a, i32>), CalcError>>,
-    scat: Option<Result<(f64, ArcArray1<f64>, f64), CalcError>>,
-    clusters_centroids: Option<Result<ArcArray2<f64>, CalcError>>,
+    raw_data: Option<Result<RawDataValue<'a>, CalcError>>,
+    scat: Option<Result<ScatValue, CalcError>>,
+    clusters_centroids: Option<Result<ClustersCentroidsValue, CalcError>>,
     sender: Sender<'a, SDBWIndexValue>,
 }
 
@@ -84,10 +102,10 @@ impl<'a> Node<'a> {
             self.raw_data.as_ref(),
         ) {
             let res = match scat.combine(clusters_centroids).combine(raw_data) {
-                Ok((((val, centroid_vars, _), cls_ctrds), (x, y))) => self
+                Ok(((sc, cl_cntrds), rd)) => self
                     .index
-                    .compute(val, &centroid_vars.view(), x, y, &cls_ctrds.view())
-                    .map(|val| SDBWIndexValue { val }),
+                    .compute(&sc.val, &sc.clusters_vars, &rd.x, &rd.y, &cl_cntrds.val)
+                    .map(|val| SDBWIndexValue { val: Arc::new(val) }),
                 Err(err) => Err(err),
             };
             self.sender.send_to_subscribers(res);
@@ -106,24 +124,21 @@ impl<'a> Node<'a> {
     }
 }
 
-impl<'a> Subscriber<(ArrayView2<'a, f64>, ArrayView1<'a, i32>)> for Node<'a> {
-    fn recieve_data(
-        &mut self,
-        data: Result<(ArrayView2<'a, f64>, ArrayView1<'a, i32>), CalcError>,
-    ) {
+impl<'a> Subscriber<RawDataValue<'a>> for Node<'a> {
+    fn recieve_data(&mut self, data: Result<RawDataValue<'a>, CalcError>) {
         self.raw_data = Some(data);
         self.process_when_ready();
     }
 }
 impl<'a> Subscriber<ScatValue> for Node<'a> {
     fn recieve_data(&mut self, data: Result<ScatValue, CalcError>) {
-        self.scat = Some(data.map(|v| (v.val, v.clusters_vars, v.var)));
+        self.scat = Some(data);
         self.process_when_ready();
     }
 }
 impl<'a> Subscriber<ClustersCentroidsValue> for Node<'a> {
     fn recieve_data(&mut self, data: Result<ClustersCentroidsValue, CalcError>) {
-        self.clusters_centroids = Some(data.map(|v| v.val));
+        self.clusters_centroids = Some(data);
         self.process_when_ready();
     }
 }

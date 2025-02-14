@@ -1,26 +1,38 @@
 use crate::calc_error::{CalcError, CombineErrors};
-use ndarray::{ArcArray1, ArcArray2, Array1, Array2, ArrayView1, ArrayView2, Axis};
+use ndarray::{ArcArray2, Array2, ArrayView2};
 use ndarray_linalg::Determinant;
-use std::{collections::HashMap, sync::Arc};
+use std::{iter::zip, sync::Arc};
 
 use crate::sender::{Sender, Subscriber};
 
-use super::helpers::{total_dispercion::TDValue, within_group_dispercion::WGDValue};
+use super::helpers::{
+    counts::CountsValue, total_dispercion::TDValue, within_group_dispercion::WGDValue,
+};
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub struct ScottIndexValue {
-    pub val: f64,
+    pub val: Arc<Vec<f64>>,
 }
 #[derive(Default)]
 pub struct Index;
 impl Index {
     fn compute(
         &self,
-        wg: &ArrayView2<f64>,
+        wg: &Vec<Array2<f64>>,
+        td: &ArcArray2<f64>,
+        counts: &Vec<Vec<usize>>,
+    ) -> Result<Vec<f64>, CalcError> {
+        zip(wg, counts)
+            .map(|(w, c)| self.helper(w, &td.view(), c))
+            .collect()
+    }
+    fn helper(
+        &self,
+        wg: &Array2<f64>,
         td: &ArrayView2<f64>,
-        counts: &ArrayView1<usize>,
+        counts: &Vec<usize>,
     ) -> Result<f64, CalcError> {
-        let n = counts.sum() as f64;
+        let n = counts.iter().sum::<usize>() as f64;
         let det_t = td.det().map_err(|e| CalcError::from(format!("{e:?}")))?;
         let det_wg = wg.det().map_err(|e| CalcError::from(format!("{e:?}")))?;
         let val = (det_t / det_wg).ln();
@@ -46,9 +58,9 @@ impl Index {
 
 pub struct Node<'a> {
     index: Index,
-    counts: Option<Result<ArcArray1<usize>, CalcError>>,
-    wg: Option<Result<ArcArray2<f64>, CalcError>>,
-    td: Option<Result<ArcArray2<f64>, CalcError>>,
+    counts: Option<Result<CountsValue, CalcError>>,
+    wg: Option<Result<WGDValue, CalcError>>,
+    td: Option<Result<TDValue, CalcError>>,
     sender: Sender<'a, ScottIndexValue>,
 }
 
@@ -69,8 +81,8 @@ impl<'a> Node<'a> {
             let res = match wg.combine(td).combine(counts) {
                 Ok(((wg, td), cnts)) => self
                     .index
-                    .compute(&wg.view(), &td.view(), &cnts.view())
-                    .map(|val| ScottIndexValue { val }),
+                    .compute(&wg.val, &td.val, &cnts.val)
+                    .map(|val| ScottIndexValue { val: Arc::new(val) }),
                 Err(err) => Err(err),
             };
             self.sender.send_to_subscribers(res);
@@ -80,22 +92,22 @@ impl<'a> Node<'a> {
         }
     }
 }
-impl<'a> Subscriber<ArcArray1<usize>> for Node<'a> {
-    fn recieve_data(&mut self, data: Result<ArcArray1<usize>, CalcError>) {
+impl<'a> Subscriber<CountsValue> for Node<'a> {
+    fn recieve_data(&mut self, data: Result<CountsValue, CalcError>) {
         self.counts = Some(data);
         self.process_when_ready();
     }
 }
 impl<'a> Subscriber<WGDValue> for Node<'a> {
     fn recieve_data(&mut self, data: Result<WGDValue, CalcError>) {
-        self.wg = Some(data.map(|v| v.val));
+        self.wg = Some(data);
         self.process_when_ready();
     }
 }
 
 impl<'a> Subscriber<TDValue> for Node<'a> {
     fn recieve_data(&mut self, data: Result<TDValue, CalcError>) {
-        self.td = Some(data.map(|v| v.val));
+        self.td = Some(data);
         self.process_when_ready();
     }
 }

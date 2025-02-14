@@ -1,14 +1,16 @@
 use crate::calc_error::{CalcError, CombineErrors};
-use ndarray::{ArcArray1, ArcArray2, Array1, ArrayView1, ArrayView2, Axis};
-use std::{collections::HashMap, sync::Arc};
+use ndarray::{ArcArray2, Array2, ArrayView1, ArrayView2, Axis};
+use std::{iter::zip, sync::Arc};
 
 use crate::sender::{Sender, Subscriber};
 
-use super::helpers::{between_group_dispercion::BGDValue, counts, total_dispercion::TDValue};
+use super::helpers::{
+    between_group_dispercion::BGDValue, counts::CountsValue, total_dispercion::TDValue,
+};
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub struct RatkowskyIndexValue {
-    pub val: f64,
+    pub val: Arc<Vec<f64>>,
 }
 #[derive(Default)]
 pub struct Index;
@@ -16,9 +18,19 @@ pub struct Index;
 impl Index {
     fn compute(
         &self,
-        counts: &ArrayView1<usize>,
-        tg: &ArrayView2<f64>,
-        bg: &ArrayView2<f64>,
+        counts: &Vec<Vec<usize>>,
+        tg: &ArcArray2<f64>,
+        bg: &Vec<Array2<f64>>,
+    ) -> Result<Vec<f64>, CalcError> {
+        zip(counts, bg)
+            .map(|(c, b)| self.helper(c, tg, b))
+            .collect()
+    }
+    fn helper(
+        &self,
+        counts: &Vec<usize>,
+        tg: &ArcArray2<f64>,
+        bg: &Array2<f64>,
     ) -> Result<f64, CalcError> {
         let diag_bg = bg.diag();
         let diag_tg = tg.diag();
@@ -27,30 +39,14 @@ impl Index {
         let q = counts.len() as f64;
         let value = (r / q).sqrt();
         Ok(value)
-        // let x_mean = x
-        //     .mean_axis(Axis(0))
-        //     .ok_or("Cant compute mean for dataset")?;
-        //
-        // let (num_of_elems, num_of_vars) = x.dim();
-        //
-        // let mut bgss: Array1<f64> = Array1::zeros(num_of_vars);
-        // for (i, c) in clusters_centroids {
-        //     bgss = bgss + clusters[&i].len() as f64 * (c - &x_mean).pow2();
-        // }
-        //
-        // let tss = x.var_axis(Axis(0), 0.) * num_of_elems as f64;
-        //
-        // let s_squared = (bgss / tss).sum() / num_of_vars as f64;
-        // let value = (s_squared / clusters.keys().len() as f64).sqrt();
-        // Ok(value)
     }
 }
 
 pub struct Node<'a> {
     index: Index,
-    bg: Option<Result<ArcArray2<f64>, CalcError>>,
-    tg: Option<Result<ArcArray2<f64>, CalcError>>,
-    counts: Option<Result<ArcArray1<usize>, CalcError>>,
+    bg: Option<Result<BGDValue, CalcError>>,
+    tg: Option<Result<TDValue, CalcError>>,
+    counts: Option<Result<CountsValue, CalcError>>,
     sender: Sender<'a, RatkowskyIndexValue>,
 }
 
@@ -62,8 +58,8 @@ impl<'a> Node<'a> {
             let res = match counts.combine(tg).combine(bg) {
                 Ok(((cnts, tg), bg)) => self
                     .index
-                    .compute(&cnts.view(), &tg.view(), &bg.view())
-                    .map(|val| RatkowskyIndexValue { val }),
+                    .compute(&cnts.val, &tg.val, &bg.val)
+                    .map(|val| RatkowskyIndexValue { val: Arc::new(val) }),
                 Err(err) => Err(err),
             };
             self.sender.send_to_subscribers(res);
@@ -83,21 +79,21 @@ impl<'a> Node<'a> {
     }
 }
 
-impl<'a> Subscriber<ArcArray1<usize>> for Node<'a> {
-    fn recieve_data(&mut self, data: Result<ArcArray1<usize>, CalcError>) {
+impl<'a> Subscriber<CountsValue> for Node<'a> {
+    fn recieve_data(&mut self, data: Result<CountsValue, CalcError>) {
         self.counts = Some(data);
         self.process_when_ready();
     }
 }
 impl<'a> Subscriber<TDValue> for Node<'a> {
     fn recieve_data(&mut self, data: Result<TDValue, CalcError>) {
-        self.tg = Some(data.map(|v| v.val));
+        self.tg = Some(data);
         self.process_when_ready();
     }
 }
 impl<'a> Subscriber<BGDValue> for Node<'a> {
     fn recieve_data(&mut self, data: Result<BGDValue, CalcError>) {
-        self.bg = Some(data.map(|v| v.val));
+        self.bg = Some(data);
         self.process_when_ready();
     }
 }

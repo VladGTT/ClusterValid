@@ -1,16 +1,40 @@
 use crate::calc_error::CalcError;
 use crate::sender::{Sender, Subscriber};
-use ndarray::{ArcArray1, ArrayView1};
+use ndarray::Array1;
 use std::iter::zip;
+use std::sync::Arc;
+
+use super::pairs_and_distances::PairsAndDistancesValue;
+
+#[derive(Clone, Debug)]
+pub struct SPlusAndMinusValue {
+    pub s_plus: Arc<Vec<usize>>,
+    pub s_minus: Arc<Vec<usize>>,
+    pub ties: Arc<Vec<usize>>,
+}
 
 #[derive(Default)]
 pub struct Index;
-
 impl Index {
     fn compute(
         &self,
-        pairs_in_the_same_cluster: &ArrayView1<i8>,
-        distances: &ArrayView1<f64>,
+        pairs_in_the_same_cluster: &Vec<Array1<i8>>,
+        distances: &Vec<Array1<f64>>,
+    ) -> Result<(Vec<usize>, Vec<usize>, Vec<usize>), CalcError> {
+        zip(pairs_in_the_same_cluster, distances)
+            .map(|(p, d)| self.helper(p, d))
+            .collect::<Result<Vec<(usize, usize, usize)>, CalcError>>()
+            .map(|v| {
+                let (first, rest): (Vec<_>, Vec<_>) =
+                    v.into_iter().map(|(x, y, z)| (x, (y, z))).unzip();
+                let (second, third): (Vec<_>, Vec<_>) = rest.into_iter().unzip();
+                (first, second, third)
+            })
+    }
+    fn helper(
+        &self,
+        pairs_in_the_same_cluster: &Array1<i8>,
+        distances: &Array1<f64>,
     ) -> Result<(usize, usize, usize), CalcError> {
         let (mut s_plus, mut s_minus, mut ties) = (0, 0, 0);
 
@@ -40,21 +64,29 @@ impl Index {
 #[derive(Default)]
 pub struct SPlusAndMinusNode<'a> {
     index: Index,
-    sender: Sender<'a, (usize, usize, usize)>,
+    sender: Sender<'a, SPlusAndMinusValue>,
 }
 
 impl<'a> SPlusAndMinusNode<'a> {
-    pub fn new(sender: Sender<'a, (usize, usize, usize)>) -> Self {
+    pub fn new(sender: Sender<'a, SPlusAndMinusValue>) -> Self {
         Self {
             index: Index,
             sender,
         }
     }
 }
-impl<'a> Subscriber<(ArcArray1<i8>, ArcArray1<f64>)> for SPlusAndMinusNode<'a> {
-    fn recieve_data(&mut self, data: Result<(ArcArray1<i8>, ArcArray1<f64>), CalcError>) {
+impl<'a> Subscriber<PairsAndDistancesValue> for SPlusAndMinusNode<'a> {
+    fn recieve_data(&mut self, data: Result<PairsAndDistancesValue, CalcError>) {
         let res = match data.as_ref() {
-            Ok((p, d)) => self.index.compute(&p.view(), &d.view()),
+            Ok(pd) => {
+                self.index
+                    .compute(&pd.pairs, &pd.distances)
+                    .map(|(s_plus, s_minus, ties)| SPlusAndMinusValue {
+                        s_plus: Arc::new(s_plus),
+                        s_minus: Arc::new(s_minus),
+                        ties: Arc::new(ties),
+                    })
+            }
             Err(err) => Err(err.clone()),
         };
         self.sender.send_to_subscribers(res);

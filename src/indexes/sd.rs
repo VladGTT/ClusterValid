@@ -1,13 +1,15 @@
+use std::sync::Arc;
+
 use crate::calc_error::{CalcError, CombineErrors};
-use ndarray::{ArcArray1, ArcArray2, ArrayView1, ArrayView2};
+use ndarray::Array2;
 
 use crate::sender::{Sender, Subscriber};
 
 use super::helpers::{clusters_centroids::ClustersCentroidsValue, scat::ScatValue};
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub struct SDIndexValue {
-    pub val: f64,
+    pub val: Arc<Vec<f64>>,
 }
 #[derive(Default)]
 pub struct Index;
@@ -15,9 +17,15 @@ pub struct Index;
 impl Index {
     pub fn compute(
         &self,
-        scat: &f64,
-        clusters_centroids: &ArrayView2<f64>,
-    ) -> Result<f64, CalcError> {
+        scat: &Vec<f64>,
+        clusters_centroids: &Vec<Array2<f64>>,
+    ) -> Result<Vec<f64>, CalcError> {
+        clusters_centroids
+            .into_iter()
+            .map(|c| self.helper(c))
+            .collect()
+    }
+    fn helper(&self, clusters_centroids: &Array2<f64>) -> Result<f64, CalcError> {
         let mut d = 0.0;
         let mut d_max = f64::MIN;
         let mut d_min = f64::MAX;
@@ -49,8 +57,8 @@ impl Index {
 
 pub struct Node<'a> {
     index: Index,
-    scat: Option<Result<(f64, ArcArray1<f64>, f64), CalcError>>,
-    clusters_centroids: Option<Result<ArcArray2<f64>, CalcError>>,
+    scat: Option<Result<ScatValue, CalcError>>,
+    clusters_centroids: Option<Result<ClustersCentroidsValue, CalcError>>,
     sender: Sender<'a, SDIndexValue>,
 }
 
@@ -60,10 +68,10 @@ impl<'a> Node<'a> {
             (self.scat.as_ref(), self.clusters_centroids.as_ref())
         {
             let res = match scat.combine(clusters_centroids) {
-                Ok(((val, _, _), cls_ctrds)) => self
+                Ok((scat, cls_ctrds)) => self
                     .index
-                    .compute(val, &cls_ctrds.view())
-                    .map(|val| SDIndexValue { val }),
+                    .compute(&scat.val, &cls_ctrds.val)
+                    .map(|val| SDIndexValue { val: Arc::new(val) }),
                 Err(err) => Err(err),
             };
             self.sender.send_to_subscribers(res);
@@ -83,13 +91,13 @@ impl<'a> Node<'a> {
 
 impl<'a> Subscriber<ScatValue> for Node<'a> {
     fn recieve_data(&mut self, data: Result<ScatValue, CalcError>) {
-        self.scat = Some(data.map(|v| (v.val, v.clusters_vars, v.var)));
+        self.scat = Some(data);
         self.process_when_ready();
     }
 }
 impl<'a> Subscriber<ClustersCentroidsValue> for Node<'a> {
     fn recieve_data(&mut self, data: Result<ClustersCentroidsValue, CalcError>) {
-        self.clusters_centroids = Some(data.map(|v| v.val));
+        self.clusters_centroids = Some(data);
         self.process_when_ready();
     }
 }

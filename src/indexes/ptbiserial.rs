@@ -1,13 +1,14 @@
 use std::iter::zip;
 
+use super::helpers::pairs_and_distances::PairsAndDistancesValue;
 use crate::calc_error::CalcError;
-use ndarray::{ArcArray1, ArrayView1};
-
 use crate::sender::{Sender, Subscriber};
+use ndarray::{Array1, ArrayView1};
+use std::sync::Arc;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub struct PtbiserialIndexValue {
-    pub val: f64,
+    pub val: Arc<Vec<f64>>,
 }
 #[derive(Default)]
 pub struct Index;
@@ -15,8 +16,17 @@ pub struct Index;
 impl Index {
     fn compute(
         &self,
-        pairs_in_the_same_cluster: &ArrayView1<i8>,
-        distances: &ArrayView1<f64>,
+        pairs_in_the_same_cluster: &Vec<Array1<i8>>,
+        distances: &Vec<Array1<f64>>,
+    ) -> Result<Vec<f64>, CalcError> {
+        zip(pairs_in_the_same_cluster, distances)
+            .map(|(p, d)| self.helper(p, d))
+            .collect()
+    }
+    fn helper(
+        &self,
+        pairs_in_the_same_cluster: &Array1<i8>,
+        distances: &Array1<f64>,
     ) -> Result<f64, CalcError> {
         let nt = pairs_in_the_same_cluster.len() as f64;
         let nw = pairs_in_the_same_cluster
@@ -53,13 +63,13 @@ impl<'a> Node<'a> {
         }
     }
 }
-impl<'a> Subscriber<(ArcArray1<i8>, ArcArray1<f64>)> for Node<'a> {
-    fn recieve_data(&mut self, data: Result<(ArcArray1<i8>, ArcArray1<f64>), CalcError>) {
+impl<'a> Subscriber<PairsAndDistancesValue> for Node<'a> {
+    fn recieve_data(&mut self, data: Result<PairsAndDistancesValue, CalcError>) {
         let res = match data.as_ref() {
-            Ok((p, d)) => self
+            Ok(pd) => self
                 .index
-                .compute(&p.view(), &d.view())
-                .map(|val| PtbiserialIndexValue { val }),
+                .compute(&pd.pairs, &pd.distances)
+                .map(|val| PtbiserialIndexValue { val: Arc::new(val) }),
             Err(err) => Err(err.clone()),
         };
         self.sender.send_to_subscribers(res);

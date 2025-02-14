@@ -2,15 +2,28 @@ use crate::calc_error::CalcError;
 use crate::sender::{Sender, Subscriber};
 use ndarray::{Array1, ArrayView1, ArrayView2};
 use std::iter::zip;
-#[derive(Clone, Copy, Debug)]
+use std::sync::Arc;
+
+use super::helpers::raw_data::RawDataValue;
+#[derive(Clone, Debug)]
 pub struct SilhouetteIndexValue {
-    pub val: f64,
+    pub val: Arc<Vec<f64>>,
 }
 #[derive(Default)]
 pub struct Index;
 
 impl Index {
-    pub fn compute(&self, x: &ArrayView2<f64>, y: &ArrayView1<i32>) -> Result<f64, CalcError> {
+    pub fn compute(
+        &self,
+        x: &ArrayView2<f64>,
+        y: &ArrayView2<usize>,
+    ) -> Result<Vec<f64>, CalcError> {
+        y.columns()
+            .into_iter()
+            .map(|c| self.helper(x, &c))
+            .collect()
+    }
+    fn helper(&self, x: &ArrayView2<f64>, y: &ArrayView1<usize>) -> Result<f64, CalcError> {
         let q = *y.iter().max().ok_or("Cant get numb of clusters")? as usize + 1;
         let mut s: Vec<Vec<f64>> = Vec::new();
         s.resize(q, Vec::default());
@@ -106,16 +119,13 @@ impl<'a> Node<'a> {
         }
     }
 }
-impl<'a> Subscriber<(ArrayView2<'a, f64>, ArrayView1<'a, i32>)> for Node<'a> {
-    fn recieve_data(
-        &mut self,
-        data: Result<(ArrayView2<'a, f64>, ArrayView1<'a, i32>), CalcError>,
-    ) {
+impl<'a> Subscriber<RawDataValue<'a>> for Node<'a> {
+    fn recieve_data(&mut self, data: Result<RawDataValue, CalcError>) {
         let res = match data.as_ref() {
-            Ok((x, y)) => self
+            Ok(rd) => self
                 .index
-                .compute(x, y)
-                .map(|val| SilhouetteIndexValue { val }),
+                .compute(&rd.x, &rd.y)
+                .map(|val| SilhouetteIndexValue { val: Arc::new(val) }),
 
             Err(err) => Err(err.clone()),
         };

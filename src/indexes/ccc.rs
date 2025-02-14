@@ -1,17 +1,31 @@
+use std::sync::Arc;
+
 use crate::calc_error::CalcError;
 use crate::sender::{Sender, Subscriber};
 use ndarray::{s, Array2, ArrayView1, ArrayView2};
 use ndarray_linalg::{Eig, Inverse, Scalar};
 
-#[derive(Clone, Copy, Debug)]
+use super::helpers::raw_data::RawDataValue;
+
+#[derive(Clone, Debug)]
 pub struct CCCIndexValue {
-    pub val: f64,
+    pub val: Arc<Vec<f64>>,
 }
 #[derive(Default)]
 pub struct Index;
 
 impl Index {
-    pub fn compute(&self, x: &ArrayView2<f64>, y: &ArrayView1<i32>) -> Result<f64, CalcError> {
+    pub fn compute(
+        &self,
+        x: &ArrayView2<f64>,
+        y: &ArrayView2<usize>,
+    ) -> Result<Vec<f64>, CalcError> {
+        y.columns()
+            .into_iter()
+            .map(|c| self.helper(x, &c))
+            .collect()
+    }
+    pub fn helper(&self, x: &ArrayView2<f64>, y: &ArrayView1<usize>) -> Result<f64, CalcError> {
         let n = x.nrows();
         let p = x.ncols();
         let q = *y.iter().max().ok_or("Cant find max")? as usize + 1;
@@ -23,7 +37,7 @@ impl Index {
         let p_star = s
             .iter()
             .enumerate()
-            .filter(|(_, v)| **v >= 1. && **v < q as f64)
+            .filter(|(_, v)| **v as usize >= 1 && (**v as usize) < q)
             .max_by(|(_, a), (_, b)| a.total_cmp(b))
             .map(|(v, _)| v)
             .ok_or("Cant find p star")?;
@@ -74,13 +88,13 @@ impl<'a> Node<'a> {
     }
 }
 
-impl<'a> Subscriber<(ArrayView2<'a, f64>, ArrayView1<'a, i32>)> for Node<'a> {
-    fn recieve_data(
-        &mut self,
-        data: Result<(ArrayView2<'a, f64>, ArrayView1<'a, i32>), CalcError>,
-    ) {
+impl<'a> Subscriber<RawDataValue<'a>> for Node<'a> {
+    fn recieve_data(&mut self, data: Result<RawDataValue<'a>, CalcError>) {
         let res = match data.as_ref() {
-            Ok((x, y)) => self.index.compute(x, y).map(|val| CCCIndexValue { val }),
+            Ok(rd) => self
+                .index
+                .compute(&rd.x, &rd.y)
+                .map(|val| CCCIndexValue { val: Arc::new(val) }),
             Err(err) => Err(err.clone()),
         };
         self.sender.send_to_subscribers(res);

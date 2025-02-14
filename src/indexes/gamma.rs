@@ -1,15 +1,25 @@
+use std::iter::zip;
+
 use crate::calc_error::CalcError;
 use crate::sender::{Sender, Subscriber};
-#[derive(Clone, Copy, Debug)]
+use std::sync::Arc;
+
+use super::helpers::s_plus_and_minus::SPlusAndMinusValue;
+#[derive(Clone, Debug)]
 pub struct GammaIndexValue {
-    pub val: f64,
+    pub val: Arc<Vec<f64>>,
 }
 
 #[derive(Default)]
 pub struct Index;
 
 impl Index {
-    fn compute(&self, s_plus: usize, s_minus: usize) -> Result<f64, CalcError> {
+    fn compute(&self, s_plus: &Vec<usize>, s_minus: &Vec<usize>) -> Result<Vec<f64>, CalcError> {
+        zip(s_plus, s_minus)
+            .map(|(s_plus, s_minus)| self.helper(*s_plus, *s_minus))
+            .collect()
+    }
+    fn helper(&self, s_plus: usize, s_minus: usize) -> Result<f64, CalcError> {
         let value = (s_plus - s_minus) as f64 / (s_plus + s_minus) as f64;
         Ok(value)
     }
@@ -28,13 +38,13 @@ impl<'a> Node<'a> {
         }
     }
 }
-impl<'a> Subscriber<(usize, usize, usize)> for Node<'a> {
-    fn recieve_data(&mut self, data: Result<(usize, usize, usize), CalcError>) {
+impl<'a> Subscriber<SPlusAndMinusValue> for Node<'a> {
+    fn recieve_data(&mut self, data: Result<SPlusAndMinusValue, CalcError>) {
         let res = match data.as_ref() {
-            Ok((s_plus, s_minus, _)) => self
+            Ok(spm) => self
                 .index
-                .compute(*s_plus, *s_minus)
-                .map(|val| GammaIndexValue { val }),
+                .compute(&spm.s_plus, &spm.s_minus)
+                .map(|val| GammaIndexValue { val: Arc::new(val) }),
             Err(err) => Err(err.clone()),
         };
         self.sender.send_to_subscribers(res);
