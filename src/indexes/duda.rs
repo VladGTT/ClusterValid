@@ -1,42 +1,53 @@
-use crate::calc_error::{CalcError, CombineErrors};
-use ndarray::{Array1, ArrayView1, ArrayView2, Axis};
-use std::{collections::HashMap, sync::Arc};
-
-use super::{Sender, Subscriber};
-use rayon::prelude::*;
-pub struct Index {}
+use super::helpers::wgs::WGSValue;
+use crate::calc_error::CalcError;
+use crate::sender::{Sender, Subscriber};
+use ndarray::{Array2, Axis};
+use std::sync::Arc;
+#[derive(Clone, Debug)]
+pub struct DudaIndexValue {
+    pub val: Arc<Vec<f64>>,
+}
+#[derive(Default)]
+pub struct Index;
 impl Index {
-    pub fn compute(
+    pub fn compute(&self, wgs: &Vec<Vec<Array2<f64>>>) -> Result<Vec<f64>, CalcError> {}
+    fn helper(
         &self,
-        x: &ArrayView2<f64>,
-        clusters_centroids: &HashMap<i32, Array1<f64>>,
-        clusters: &HashMap<i32, Array1<usize>>,
+        level: usize,
+        index_m: usize,
+        index_k: usize,
+        index_l: usize,
+        wgs: &Vec<Vec<Array2<f64>>>,
     ) -> Result<f64, CalcError> {
-        if y.iter().counts().keys().len() != 2 {
-            return Err(CalcError::from("There is more than 2 clusters"));
+        Ok(
+            (wgs[level][index_k].diag().sum() + wgs[level][index_l].diag().sum())
+                / wgs[level + 1][index_m].diag().sum(),
+        )
+    }
+}
+pub struct Node<'a> {
+    index: Index,
+    sender: Sender<'a, DudaIndexValue>,
+}
+
+impl<'a> Node<'a> {
+    pub fn new(sender: Sender<'a, DudaIndexValue>) -> Self {
+        Self {
+            index: Index,
+            sender,
         }
+    }
+}
 
-        let dataset_mean = x.mean_axis(Axis(0)).ok_or("Cant calc mean")?;
-
-        let within_group_dispersion_parent = {
-            let diff = &x - &dataset_mean;
-            diff.dot(&diff.t()).diag().sum()
+impl<'a> Subscriber<WGSValue> for Node<'a> {
+    fn recieve_data(&mut self, data: Result<WGSValue, CalcError>) {
+        let res = match data {
+            Ok(wg) => self
+                .index
+                .compute(&wg.val)
+                .map(|val| DudaIndexValue { val: Arc::new(val) }),
+            Err(err) => Err(err),
         };
-
-        let mut within_group_dispersion_children: HashMap<i32, f64> = HashMap::default();
-        for (cl_idx, idxs) in clusters.iter() {
-            for idx in idxs {
-                let diff = &x.row(*idx) - &cluster_centers[cl_idx];
-
-                within_group_dispersion_children
-                    .entry(*cl_idx)
-                    .and_modify(|v| *v += diff.dot(&diff))
-                    .or_insert(0.);
-            }
-        }
-
-        let value = within_group_dispersion_parent
-            / (within_group_dispersion_children.values().sum::<f64>());
-        Ok(value)
+        self.sender.send_to_subscribers(res);
     }
 }

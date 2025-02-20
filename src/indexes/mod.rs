@@ -23,13 +23,11 @@ pub mod sd;
 pub mod sdbw;
 pub mod trcovw;
 //
+pub mod dindex;
+pub mod frey;
+pub mod hartigan;
+pub mod kl;
 //
-// pub mod dindex;
 // pub mod beale;
 // pub mod duda;
 // pub mod pseudot2;
-//
-// pub mod gap;
-// pub mod kl;
-// pub mod frey;
-// pub mod hardigan;
