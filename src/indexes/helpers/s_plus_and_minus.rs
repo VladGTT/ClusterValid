@@ -8,9 +8,9 @@ use super::pairs_and_distances::PairsAndDistancesValue;
 
 #[derive(Clone, Debug)]
 pub struct SPlusAndMinusValue {
-    pub s_plus: Arc<Vec<usize>>,
-    pub s_minus: Arc<Vec<usize>>,
-    pub ties: Arc<Vec<usize>>,
+    pub s_plus: Arc<Vec<isize>>,
+    pub s_minus: Arc<Vec<isize>>,
+    pub ties: Arc<Vec<isize>>,
 }
 
 #[derive(Default)]
@@ -20,10 +20,10 @@ impl Index {
         &self,
         pairs_in_the_same_cluster: &Vec<Array1<i8>>,
         distances: &Vec<Array1<f64>>,
-    ) -> Result<(Vec<usize>, Vec<usize>, Vec<usize>), CalcError> {
+    ) -> Result<(Vec<isize>, Vec<isize>, Vec<isize>), CalcError> {
         zip(pairs_in_the_same_cluster, distances)
             .map(|(p, d)| self.helper(p, d))
-            .collect::<Result<Vec<(usize, usize, usize)>, CalcError>>()
+            .collect::<Result<Vec<(isize, isize, isize)>, CalcError>>()
             .map(|v| {
                 let (first, rest): (Vec<_>, Vec<_>) =
                     v.into_iter().map(|(x, y, z)| (x, (y, z))).unzip();
@@ -35,7 +35,8 @@ impl Index {
         &self,
         pairs_in_the_same_cluster: &Array1<i8>,
         distances: &Array1<f64>,
-    ) -> Result<(usize, usize, usize), CalcError> {
+    ) -> Result<(isize, isize, isize), CalcError> {
+        // let (mut s_plus, mut s_minus, mut ties) = (-42, 35, 0);
         let (mut s_plus, mut s_minus, mut ties) = (0, 0, 0);
 
         // finding s_plus which represents the number of times a distance between two points
@@ -45,7 +46,7 @@ impl Index {
 
         for (i, (d1, b1)) in zip(distances, pairs_in_the_same_cluster).enumerate() {
             for (j, (d2, b2)) in zip(distances, pairs_in_the_same_cluster).enumerate() {
-                if i < j && (*b1 == 1 && *b2 == 0) {
+                if (*b1 == 1 && *b2 == 0) {
                     if d1 < d2 {
                         s_plus += 1;
                     }

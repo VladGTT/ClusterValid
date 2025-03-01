@@ -1,8 +1,7 @@
-use std::iter::zip;
-
 use super::helpers::pairs_and_distances::PairsAndDistancesValue;
 use crate::calc_error::CalcError;
 use crate::sender::{Sender, Subscriber};
+use itertools::izip;
 use ndarray::Array1;
 use std::sync::Arc;
 
@@ -19,15 +18,13 @@ impl Index {
         pairs_in_the_same_cluster: &Vec<Array1<i8>>,
         distances: &Vec<Array1<f64>>,
     ) -> Result<Vec<f64>, CalcError> {
-        zip(
-            zip(
-                pairs_in_the_same_cluster,
-                pairs_in_the_same_cluster.iter().next(),
-            ),
-            zip(distances, distances.iter().next()),
+        izip!(
+            pairs_in_the_same_cluster,
+            pairs_in_the_same_cluster[1..].iter(),
+            distances,
+            distances[1..].iter(),
         )
-        .into_iter()
-        .map(|((p, p_next), (d, d_next))| {
+        .map(|(p, p_next, d, d_next)| {
             let (sb, sw) = self.helper(p, d)?;
             let (sb_next, sw_next) = self.helper(p_next, d_next)?;
 
@@ -42,12 +39,12 @@ impl Index {
     }
     fn helper(&self, p: &Array1<i8>, d: &Array1<f64>) -> Result<(f64, f64), CalcError> {
         let nw = p.iter().filter(|i| **i == 1).count() as f64;
-        let sw = zip(p, d)
+        let sw = izip!(p, d)
             .filter(|(p, _)| **p == 1)
             .map(|(_, d)| *d)
             .sum::<f64>();
         let nb = p.iter().filter(|i| **i == 0).count() as f64;
-        let sb = zip(p, d)
+        let sb = izip!(p, d)
             .filter(|(p, _)| **p == 0)
             .map(|(_, d)| *d)
             .sum::<f64>();

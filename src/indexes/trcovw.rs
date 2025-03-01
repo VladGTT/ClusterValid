@@ -16,7 +16,7 @@ impl Index {
     fn helper(&self, wg: &Array2<f64>) -> Result<f64, CalcError> {
         let var = wg.var_axis(Axis(0), 0.);
         let val = var.sum();
-        Ok(val)
+        Ok(val * 2.)
     }
 }
 pub struct Node<'a> {

@@ -47,12 +47,11 @@ impl Index {
                 .flatten()
                 .map(|v| *v)
                 .collect::<Vec<f64>>();
-            let arr =
-                Array2::from_shape_vec((vec.len(), x.ncols()), vec).map_err(|e| e.to_string())?;
+            let arr = Array2::from_shape_vec((vec.len() / x.ncols(), x.ncols()), vec)
+                .map_err(|e| e.to_string())?;
             let var = arr.var_axis(Axis(0), 0.);
             clusters_vars.row_mut(i).assign(&var);
         }
-
         let var = var.pow2().sum().sqrt();
         let clusters_vars = clusters_vars.dot(&clusters_vars.t()).diag().sqrt();
         let clusters_vars_mean = clusters_vars.mean().ok_or("Cant calc mean")?;

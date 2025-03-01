@@ -1,11 +1,15 @@
 use crate::indexes::ball_hall::BallHallIndexValue;
 use crate::indexes::c_index::CIndexValue;
 use crate::indexes::calinski_harabasz::CalinskiHarabaszIndexValue;
+use crate::indexes::ccc::CCCIndexValue;
 use crate::indexes::davies_bouldin::DaviesBouldinIndexValue;
+use crate::indexes::dindex::DIndexValue;
 use crate::indexes::dunn::DunnIndexValue;
+use crate::indexes::frey::FreyIndexValue;
 use crate::indexes::friedman::FriedmanIndexValue;
 use crate::indexes::gamma::GammaIndexValue;
 use crate::indexes::gplus::GplusIndexValue;
+use crate::indexes::hartigan::HartiganIndexValue;
 use crate::indexes::helpers::counts::CountsValue;
 use crate::indexes::helpers::pairs_and_distances::PairsAndDistancesValue;
 use crate::indexes::helpers::raw_data::RawDataValue;
@@ -13,22 +17,23 @@ use crate::indexes::helpers::s_plus_and_minus::{SPlusAndMinusNode, SPlusAndMinus
 use crate::indexes::helpers::scat::ScatValue;
 use crate::indexes::helpers::total_dispercion::TDValue;
 use crate::indexes::hubert::HubertIndexValue;
+use crate::indexes::kl::KLIndexValue;
 use crate::indexes::mariott::MariottIndexValue;
 use crate::indexes::mcclain::McclainIndexValue;
 use crate::indexes::ptbiserial::PtbiserialIndexValue;
 use crate::indexes::ratkowsky::RatkowskyIndexValue;
 use crate::indexes::rubin::RubinIndexValue;
 use crate::indexes::scott::ScottIndexValue;
-use crate::indexes::sd::SDIndexValue;
+use crate::indexes::sd_dis::SDDisIndexValue;
 use crate::indexes::sdbw::SDBWIndexValue;
 use crate::indexes::silhouette::SilhouetteIndexValue;
 use crate::indexes::tau::TauIndexValue;
 use crate::indexes::tracew::TracewIndexValue;
 use crate::indexes::trcovw::TrcovwIndexValue;
 
-use crate::indexes::ccc::CCCIndexValue;
 use crate::indexes::helpers::between_group_dispercion::BGDValue;
 use crate::indexes::helpers::clusters_centroids::ClustersCentroidsValue;
+use crate::indexes::helpers::wgs::WGSValue;
 use crate::indexes::helpers::within_group_dispercion::WGDValue;
 
 use crate::{
@@ -39,23 +44,28 @@ use crate::{
         calinski_harabasz::Node as CalinskiHarabaszNode,
         ccc::Node as CCCNode,
         davies_bouldin::Node as DaviesBouldinNode,
+        dindex::Node as DindexNode,
         dunn::Node as DunnNode,
+        frey::Node as FreyNode,
         friedman::Node as FriedmanNode,
         gamma::Node as GammaNode,
         gplus::Node as GplusNode,
+        hartigan::Node as HartiganNode,
         helpers::{
             between_group_dispercion::BGDNode, clusters_centroids::ClustersCentroidsNode,
             counts::CountsNode, pairs_and_distances::PairsAndDistancesNode, raw_data::RawDataNode,
-            scat::Node as ScatNode, total_dispercion::TDNode, within_group_dispercion::WGDNode,
+            scat::Node as ScatNode, total_dispercion::TDNode, wgs::WGDNode as WGSNode,
+            within_group_dispercion::WGDNode,
         },
         hubert::Node as HubertNode,
+        kl::Node as KLNode,
         mariott::Node as MariottNode,
         mcclain::Node as McclainNode,
         ptbiserial::Node as PtbiserialNode,
         ratkowsky::Node as RatkowskyNode,
         rubin::Node as RubinNode,
         scott::Node as ScottNode,
-        sd::Node as SDNode,
+        sd_dis::Node as SDDisNode,
         sdbw::Node as SDBWNode,
         silhouette::Node as SilhouetteNode,
         tau::Node as TauNode,
@@ -64,10 +74,10 @@ use crate::{
     },
     sender::{Sender, Subscriber},
 };
-use pyo3::{pyclass, pymethods};
+// use pyo3::{pyclass, pymethods};
 use std::sync::{Arc, Mutex};
 
-#[pyclass]
+// #[pyclass]
 #[derive(Default, Debug, Clone)]
 pub struct IndexTreeReturnValue {
     pub ball_hall: Option<Result<BallHallIndexValue, CalcError>>,
@@ -89,9 +99,14 @@ pub struct IndexTreeReturnValue {
     pub ratkowsky: Option<Result<RatkowskyIndexValue, CalcError>>,
     pub trcovw: Option<Result<TrcovwIndexValue, CalcError>>,
     pub hubert: Option<Result<HubertIndexValue, CalcError>>,
-    pub sd: Option<Result<SDIndexValue, CalcError>>,
+    pub sd_dis: Option<Result<SDDisIndexValue, CalcError>>,
+    pub sd_scat: Option<Result<ScatValue, CalcError>>,
     pub sdbw: Option<Result<SDBWIndexValue, CalcError>>,
     pub ccc: Option<Result<CCCIndexValue, CalcError>>,
+    pub dindex: Option<Result<DIndexValue, CalcError>>,
+    pub hartigan: Option<Result<HartiganIndexValue, CalcError>>,
+    pub frey: Option<Result<FreyIndexValue, CalcError>>,
+    pub kl: Option<Result<KLIndexValue, CalcError>>,
 }
 
 // #[pymethods]
@@ -293,9 +308,14 @@ impl Subscriber<HubertIndexValue> for IndexTreeReturnValue {
         self.hubert = Some(data);
     }
 }
-impl Subscriber<SDIndexValue> for IndexTreeReturnValue {
-    fn recieve_data(&mut self, data: Result<SDIndexValue, CalcError>) {
-        self.sd = Some(data);
+impl Subscriber<SDDisIndexValue> for IndexTreeReturnValue {
+    fn recieve_data(&mut self, data: Result<SDDisIndexValue, CalcError>) {
+        self.sd_dis = Some(data);
+    }
+}
+impl Subscriber<ScatValue> for IndexTreeReturnValue {
+    fn recieve_data(&mut self, data: Result<ScatValue, CalcError>) {
+        self.sd_scat = Some(data);
     }
 }
 impl Subscriber<SDBWIndexValue> for IndexTreeReturnValue {
@@ -306,6 +326,27 @@ impl Subscriber<SDBWIndexValue> for IndexTreeReturnValue {
 impl Subscriber<CCCIndexValue> for IndexTreeReturnValue {
     fn recieve_data(&mut self, data: Result<CCCIndexValue, CalcError>) {
         self.ccc = Some(data);
+    }
+}
+impl Subscriber<DIndexValue> for IndexTreeReturnValue {
+    fn recieve_data(&mut self, data: Result<DIndexValue, CalcError>) {
+        self.dindex = Some(data);
+    }
+}
+impl Subscriber<HartiganIndexValue> for IndexTreeReturnValue {
+    fn recieve_data(&mut self, data: Result<HartiganIndexValue, CalcError>) {
+        self.hartigan = Some(data);
+    }
+}
+
+impl Subscriber<FreyIndexValue> for IndexTreeReturnValue {
+    fn recieve_data(&mut self, data: Result<FreyIndexValue, CalcError>) {
+        self.frey = Some(data);
+    }
+}
+impl Subscriber<KLIndexValue> for IndexTreeReturnValue {
+    fn recieve_data(&mut self, data: Result<KLIndexValue, CalcError>) {
+        self.kl = Some(data);
     }
 }
 pub struct IndexTree<'a> {
@@ -330,6 +371,7 @@ pub struct IndexTreeBuilder<'a> {
     pairs_and_distances_sender: Sender<'a, PairsAndDistancesValue>,
     counts_sender: Sender<'a, CountsValue>,
     wg_sender: Sender<'a, WGDValue>,
+    wgs_sender: Sender<'a, WGSValue>,
     bg_sender: Sender<'a, BGDValue>,
     td_sender: Sender<'a, TDValue>,
     s_plus_and_minus_sender: Sender<'a, SPlusAndMinusValue>,
@@ -343,6 +385,22 @@ impl<'a> IndexTreeBuilder<'a> {
             .clone()]))));
         self.wg_sender.add_subscriber(ball_hall.clone());
         self.counts_sender.add_subscriber(ball_hall);
+        self
+    }
+    pub fn add_hartigan(mut self) -> Self {
+        let hartigan = Arc::new(Mutex::new(HartiganNode::new(Sender::new(vec![self
+            .retval
+            .clone()]))));
+        self.wg_sender.add_subscriber(hartigan.clone());
+        self.counts_sender.add_subscriber(hartigan);
+        self
+    }
+    pub fn add_kl(mut self) -> Self {
+        let kl = Arc::new(Mutex::new(KLNode::new(Sender::new(vec![self
+            .retval
+            .clone()]))));
+        self.wg_sender.add_subscriber(kl.clone());
+        self.counts_sender.add_subscriber(kl);
         self
     }
     pub fn add_silhouette(mut self) -> Self {
@@ -362,6 +420,16 @@ impl<'a> IndexTreeBuilder<'a> {
             .add_subscriber(davies_bouldin);
         self
     }
+    pub fn add_dindex(mut self) -> Self {
+        let dindex = Arc::new(Mutex::new(DindexNode::new(Sender::new(vec![self
+            .retval
+            .clone()]))));
+        self.raw_data_sender.add_subscriber(dindex.clone());
+
+        self.counts_sender.add_subscriber(dindex.clone());
+        self.clusters_centroids_sender.add_subscriber(dindex);
+        self
+    }
     pub fn add_calinski_harabasz(mut self) -> Self {
         let calinski_harabasz = Arc::new(Mutex::new(CalinskiHarabaszNode::new(Sender::new(vec![
             self.retval.clone(),
@@ -377,6 +445,13 @@ impl<'a> IndexTreeBuilder<'a> {
             .retval
             .clone()]))));
         self.pairs_and_distances_sender.add_subscriber(c_index);
+        self
+    }
+    pub fn add_frey(mut self) -> Self {
+        let frey = Arc::new(Mutex::new(FreyNode::new(Sender::new(vec![self
+            .retval
+            .clone()]))));
+        self.pairs_and_distances_sender.add_subscriber(frey);
         self
     }
     pub fn add_dunn(mut self) -> Self {
@@ -407,7 +482,7 @@ impl<'a> IndexTreeBuilder<'a> {
         let scott = Arc::new(Mutex::new(ScottNode::new(Sender::new(vec![self
             .retval
             .clone()]))));
-        self.wg_sender.add_subscriber(scott.clone());
+        self.wgs_sender.add_subscriber(scott.clone());
         self.td_sender.add_subscriber(scott.clone());
 
         self.counts_sender.add_subscriber(scott);
@@ -493,14 +568,16 @@ impl<'a> IndexTreeBuilder<'a> {
         self.clusters_centroids_sender.add_subscriber(hubert);
         self
     }
-    pub fn add_sd(mut self) -> Self {
-        let sd = Arc::new(Mutex::new(SDNode::new(Sender::new(vec![self
+    pub fn add_sd_dis(mut self) -> Self {
+        let sd_dis = Arc::new(Mutex::new(SDDisNode::new(Sender::new(vec![self
             .retval
             .clone()]))));
 
-        self.scat_sender.add_subscriber(sd.clone());
-
-        self.clusters_centroids_sender.add_subscriber(sd);
+        self.clusters_centroids_sender.add_subscriber(sd_dis);
+        self
+    }
+    pub fn add_sd_scat(mut self) -> Self {
+        self.scat_sender.add_subscriber(self.retval.clone());
         self
     }
     pub fn add_sdbw(mut self) -> Self {
@@ -520,9 +597,17 @@ impl<'a> IndexTreeBuilder<'a> {
             .clone()]))));
 
         self.raw_data_sender.add_subscriber(ccc.clone());
+        self.wg_sender.add_subscriber(ccc.clone());
+        self.td_sender.add_subscriber(ccc);
         self
     }
     pub fn finish(mut self) -> IndexTree<'a> {
+        if !self.wgs_sender.is_empty() {
+            let wgs = Arc::new(Mutex::new(WGSNode::new(self.wgs_sender)));
+            self.raw_data_sender.add_subscriber(wgs.clone());
+            self.clusters_centroids_sender.add_subscriber(wgs.clone());
+            self.counts_sender.add_subscriber(wgs);
+        }
         if !self.scat_sender.is_empty() {
             let scat = Arc::new(Mutex::new(ScatNode::new(self.scat_sender)));
             self.raw_data_sender.add_subscriber(scat.clone());

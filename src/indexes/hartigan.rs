@@ -1,11 +1,11 @@
 use crate::calc_error::{CalcError, CombineErrors};
 use ndarray::Array2;
-use ndarray_linalg::Determinant;
 
 use crate::sender::{Sender, Subscriber};
 
 use super::helpers::{counts::CountsValue, within_group_dispercion::WGDValue};
-use std::{iter::zip, sync::Arc};
+use itertools::izip;
+use std::sync::Arc;
 #[derive(Clone, Debug)]
 pub struct HartiganIndexValue {
     pub val: Arc<Vec<f64>>,
@@ -19,14 +19,13 @@ impl Index {
         counts: &Vec<Vec<usize>>,
         wg: &Vec<Array2<f64>>,
     ) -> Result<Vec<f64>, CalcError> {
-        zip(zip(counts, counts.iter().next()), zip(wg, wg.iter().next()))
-            .into_iter()
-            .map(|((counts, counts_next), (wg, wg_next))| {
-                let tracewg_next = wg_next.diag().sum();
-                let tracewg = wg.diag().sum();
+        izip!(counts[1..].iter(), wg, wg[1..].iter())
+            .map(|(counts_next, w_next, w)| {
+                let tracewg_next = w_next.diag().sum();
+                let tracewg = w.diag().sum();
                 let n = counts_next.iter().sum::<usize>() as f64;
                 let q = counts_next.len() as f64;
-                let val = (tracewg_next / tracewg - 1.) * (n - q - 1.);
+                let val = (tracewg / tracewg_next - 1.) * (n - q - 1.);
                 Ok(val)
             })
             .collect()

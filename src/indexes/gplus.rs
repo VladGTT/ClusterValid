@@ -18,7 +18,7 @@ impl Index {
     fn compute(
         &self,
         pairs_in_the_same_cluster: &Vec<Array1<i8>>,
-        s_minus: &Vec<usize>,
+        s_minus: &Vec<isize>,
     ) -> Result<Vec<f64>, CalcError> {
         zip(pairs_in_the_same_cluster, s_minus)
             .map(|(pd, sm)| self.helper(pd, *sm))
@@ -27,7 +27,7 @@ impl Index {
     fn helper(
         &self,
         pairs_in_the_same_cluster: &Array1<i8>,
-        s_minus: usize,
+        s_minus: isize,
     ) -> Result<f64, CalcError> {
         let nt = pairs_in_the_same_cluster.len() as f64;
         let value = 2. * s_minus as f64 / (nt * (nt - 1.0));

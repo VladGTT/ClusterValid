@@ -43,7 +43,10 @@ impl WGD {
             let dif = &x - &clusters_centroids.row(*y);
             retval[*y].push_row(dif.view());
         }
-        retval.iter_mut().map(|elem| *elem = elem.t().dot(elem));
+        let retval = retval
+            .iter()
+            .map(|elem| elem.t().dot(elem))
+            .collect::<Vec<Array2<f64>>>();
         Ok(retval)
     }
 }

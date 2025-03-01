@@ -1,25 +1,21 @@
 use std::sync::Arc;
 
-use crate::calc_error::{CalcError, CombineErrors};
+use crate::calc_error::CalcError;
 use ndarray::Array2;
 
 use crate::sender::{Sender, Subscriber};
 
-use super::helpers::{clusters_centroids::ClustersCentroidsValue, scat::ScatValue};
+use super::helpers::clusters_centroids::ClustersCentroidsValue;
 
 #[derive(Clone, Debug)]
-pub struct SDIndexValue {
+pub struct SDDisIndexValue {
     pub val: Arc<Vec<f64>>,
 }
 #[derive(Default)]
 pub struct Index;
 
 impl Index {
-    pub fn compute(
-        &self,
-        scat: &Vec<f64>,
-        clusters_centroids: &Vec<Array2<f64>>,
-    ) -> Result<Vec<f64>, CalcError> {
+    pub fn compute(&self, clusters_centroids: &Vec<Array2<f64>>) -> Result<Vec<f64>, CalcError> {
         clusters_centroids
             .into_iter()
             .map(|c| self.helper(c))
@@ -57,48 +53,28 @@ impl Index {
 
 pub struct Node<'a> {
     index: Index,
-    scat: Option<Result<ScatValue, CalcError>>,
-    clusters_centroids: Option<Result<ClustersCentroidsValue, CalcError>>,
-    sender: Sender<'a, SDIndexValue>,
+    sender: Sender<'a, SDDisIndexValue>,
 }
 
 impl<'a> Node<'a> {
-    fn process_when_ready(&mut self) {
-        if let (Some(scat), Some(clusters_centroids)) =
-            (self.scat.as_ref(), self.clusters_centroids.as_ref())
-        {
-            let res = match scat.combine(clusters_centroids) {
-                Ok((scat, cls_ctrds)) => self
-                    .index
-                    .compute(&scat.val, &cls_ctrds.val)
-                    .map(|val| SDIndexValue { val: Arc::new(val) }),
-                Err(err) => Err(err),
-            };
-            self.sender.send_to_subscribers(res);
-            self.scat = None;
-            self.clusters_centroids = None;
-        }
-    }
-    pub fn new(sender: Sender<'a, SDIndexValue>) -> Self {
+    pub fn new(sender: Sender<'a, SDDisIndexValue>) -> Self {
         Self {
             index: Index,
-            scat: None,
-            clusters_centroids: None,
             sender,
         }
     }
 }
 
-impl<'a> Subscriber<ScatValue> for Node<'a> {
-    fn recieve_data(&mut self, data: Result<ScatValue, CalcError>) {
-        self.scat = Some(data);
-        self.process_when_ready();
-    }
-}
 impl<'a> Subscriber<ClustersCentroidsValue> for Node<'a> {
     fn recieve_data(&mut self, data: Result<ClustersCentroidsValue, CalcError>) {
-        self.clusters_centroids = Some(data);
-        self.process_when_ready();
+        let res = match data {
+            Ok(cls_ctrds) => self
+                .index
+                .compute(&cls_ctrds.val)
+                .map(|val| SDDisIndexValue { val: Arc::new(val) }),
+            Err(err) => Err(err),
+        };
+        self.sender.send_to_subscribers(res);
     }
 }
 // impl Computable for IndexDis {

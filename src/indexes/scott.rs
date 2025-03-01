@@ -1,12 +1,13 @@
 use crate::calc_error::{CalcError, CombineErrors};
+use crate::sender::{Sender, Subscriber};
+use itertools::izip;
 use ndarray::{ArcArray2, Array2, ArrayView2};
 use ndarray_linalg::Determinant;
-use std::{iter::zip, sync::Arc};
-
-use crate::sender::{Sender, Subscriber};
+use std::sync::Arc;
 
 use super::helpers::{
-    counts::CountsValue, total_dispercion::TDValue, within_group_dispercion::WGDValue,
+    counts::CountsValue, total_dispercion::TDValue, wgs::WGSValue,
+    within_group_dispercion::WGDValue,
 };
 
 #[derive(Clone, Debug)]
@@ -18,40 +19,34 @@ pub struct Index;
 impl Index {
     fn compute(
         &self,
-        wg: &Vec<Array2<f64>>,
+        wg: &Vec<Vec<Array2<f64>>>,
         td: &ArcArray2<f64>,
         counts: &Vec<Vec<usize>>,
     ) -> Result<Vec<f64>, CalcError> {
-        zip(wg, counts)
+        izip!(wg, counts)
             .map(|(w, c)| self.helper(w, &td.view(), c))
             .collect()
     }
     fn helper(
         &self,
-        wg: &Array2<f64>,
+        wg: &Vec<Array2<f64>>,
         td: &ArrayView2<f64>,
         counts: &Vec<usize>,
     ) -> Result<f64, CalcError> {
-        let n = counts.iter().sum::<usize>() as f64;
-        let det_t = td.det().map_err(|e| CalcError::from(format!("{e:?}")))?;
-        let det_wg = wg.det().map_err(|e| CalcError::from(format!("{e:?}")))?;
-        let val = (det_t / det_wg).ln();
-        let val = val * n;
-        // let x_mean = x.mean_axis(Axis(0)).ok_or("Cant calc mean")?;
-        // let mut diffs1: Array2<f64> = Array2::zeros(x.dim());
-        // let mut diffs2: Array2<f64> = Array2::zeros(x.dim());
-        // for (i, (x, y)) in zip(x.rows(), y).enumerate() {
-        //     diffs1.row_mut(i).assign(&(&x - &clusters_centroids[y]));
-        //     diffs2.row_mut(i).assign(&(&x - &x_mean));
-        // }
-        //
-        // let w_q = diffs1.t().dot(&diffs1);
-        // let t = diffs2.t().dot(&diffs2);
-        // let det_t = Determinant::det(&t).map_err(|e| CalcError::from(format!("{e:?}")))?;
-        // let det_w_q = Determinant::det(&w_q).map_err(|e| CalcError::from(format!("{e:?}")))?;
-        //
-        // let val = x.nrows() as f64 * (det_t / det_w_q).ln();
-        //
+        let vec = izip!(wg, counts)
+            .map(|(wg, nk)| {
+                let det_wg = (wg / *nk as f64)
+                    .det()
+                    .map_err(|e| CalcError::from(format!("{e:?}")))?;
+                Ok(det_wg.ln() * *nk as f64)
+            })
+            .collect::<Result<Vec<f64>, CalcError>>()?;
+        let val = vec.iter().sum();
+        // let n = counts.iter().sum::<usize>() as f64;
+        // let det_t = td.det().map_err(|e| CalcError::from(format!("{e:?}")))?;
+        // let det_wg = wg.det().map_err(|e| CalcError::from(format!("{e:?}")))?;
+        // let val = (det_t / det_wg).ln();
+        // let val = val * n;
         Ok(val)
     }
 }
@@ -59,7 +54,7 @@ impl Index {
 pub struct Node<'a> {
     index: Index,
     counts: Option<Result<CountsValue, CalcError>>,
-    wg: Option<Result<WGDValue, CalcError>>,
+    wg: Option<Result<WGSValue, CalcError>>,
     td: Option<Result<TDValue, CalcError>>,
     sender: Sender<'a, ScottIndexValue>,
 }
@@ -98,8 +93,8 @@ impl<'a> Subscriber<CountsValue> for Node<'a> {
         self.process_when_ready();
     }
 }
-impl<'a> Subscriber<WGDValue> for Node<'a> {
-    fn recieve_data(&mut self, data: Result<WGDValue, CalcError>) {
+impl<'a> Subscriber<WGSValue> for Node<'a> {
+    fn recieve_data(&mut self, data: Result<WGSValue, CalcError>) {
         self.wg = Some(data);
         self.process_when_ready();
     }

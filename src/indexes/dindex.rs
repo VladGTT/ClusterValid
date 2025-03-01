@@ -23,21 +23,13 @@ impl Index {
         clusters_centroids: &Vec<Array2<f64>>,
         counts: &Vec<Vec<usize>>,
     ) -> Result<Vec<f64>, CalcError> {
-        izip!(
-            y.columns(),
-            clusters_centroids,
-            counts,
-            y.columns().into_iter().next(),
-            clusters_centroids.iter().next(),
-            counts.iter().next()
-        )
-        .map(|(y, clcntrds, cnts, y_next, clcntrds_next, cnts_next)| {
-            let dindex_next = self.helper(x, &y_next, &clcntrds_next, cnts_next)?;
-            let dindex = self.helper(x, &y, &clcntrds, cnts)?;
-            let val = dindex_next - dindex;
-            Ok(val)
-        })
-        .collect()
+        izip!(y.columns(), clusters_centroids, counts,)
+            .map(|(y, clcntrds, cnts)| {
+                let dindex = self.helper(x, &y, &clcntrds, cnts)?;
+                let val = dindex;
+                Ok(val)
+            })
+            .collect()
     }
     fn helper(
         &self,

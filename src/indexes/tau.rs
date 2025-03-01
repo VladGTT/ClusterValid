@@ -18,9 +18,9 @@ impl Index {
     pub fn compute(
         &self,
         pairs_in_the_same_cluster: &Vec<Array1<i8>>,
-        s_plus: &Vec<usize>,
-        s_minus: &Vec<usize>,
-        ties: &Vec<usize>,
+        s_plus: &Vec<isize>,
+        s_minus: &Vec<isize>,
+        ties: &Vec<isize>,
     ) -> Result<Vec<f64>, CalcError> {
         zip(zip(pairs_in_the_same_cluster, ties), zip(s_plus, s_minus))
             .into_iter()
@@ -30,52 +30,20 @@ impl Index {
     fn helper(
         &self,
         pairs_in_the_same_cluster: &Array1<i8>,
-        s_plus: usize,
-        s_minus: usize,
-        ties: usize,
+        s_plus: isize,
+        s_minus: isize,
+        ties: isize,
     ) -> Result<f64, CalcError> {
         let nt = pairs_in_the_same_cluster.len() as f64;
         let temp = nt * (nt - 1.) / 2.;
-        let value = (s_plus - s_minus) as f64 / (temp * (temp - ties as f64)).sqrt();
+
+        let nw = pairs_in_the_same_cluster
+            .iter()
+            .filter(|i| **i == 1)
+            .count() as f64;
+        let nb = nt - nw;
+        let value = (s_plus - s_minus) as f64 / (temp * nw * nb).sqrt();
         Ok(value)
-
-        // let nw = pairs_in_the_same_cluster
-        //     .iter()
-        //     .filter(|i| **i == 1)
-        //     .count() as f64;
-        // let nb = nt - nw;
-        // let value = (s_plus - s_minus) as f64 / (temp * nw * nb).sqrt();
-        // Ok(value)
-
-        // return Err(CalcError::from(format!("{pairs_and_distances:?}")));
-        // let (pairs_in_the_same_cluster, distances) = pairs_and_distances;
-        // let total_number_of_pairs = pairs_in_the_same_cluster.len();
-        // let (mut s_plus, mut s_minus): (usize, usize) = (0, 0);
-        //
-        // // finding s_plus which represents the number of times a distance between two points
-        // // which belong to the same cluster is strictly smaller than the distance between two points not belonging to the same cluster
-        // // and s_minus which represents the number of times distance between two points lying in the same cluster  is strictly greater than a distance between two points not
-        // // belonging to the same cluster
-        //
-        // for (d1, _) in zip(distances, pairs_in_the_same_cluster).filter(|(_, p)| **p == 0) {
-        //     let mut is_smaller = true;
-        //     for (d2, _) in zip(distances, pairs_in_the_same_cluster).filter(|(_, p)| **p == 1) {
-        //         is_smaller &= d2 < d1;
-        //     }
-        //     s_plus += is_smaller as usize;
-        //     s_minus += !is_smaller as usize;
-        // }
-        // // return Err(CalcError::from(format!("s+ {s_plus} s- {s_minus}")));
-        // let nw: usize = pairs_in_the_same_cluster
-        //     .iter()
-        //     .filter(|i| **i == 1)
-        //     .map(|f| *f as usize)
-        //     .sum();
-        // let nb: usize = total_number_of_pairs - nw;
-        // let v0 = (total_number_of_pairs * (total_number_of_pairs - 1)) as f64 / 2.0;
-        // // let value = (s_plus - s_minus) as f64 / ((v0 - t as f64) * v0).sqrt();
-        // let value = (s_plus - s_minus) as f64 / (nb as f64 * nw as f64 * v0).sqrt();
-        // Ok(value)
     }
 }
 

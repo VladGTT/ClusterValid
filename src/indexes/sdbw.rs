@@ -1,6 +1,7 @@
 use std::iter::zip;
 
 use crate::calc_error::{CalcError, CombineErrors};
+use itertools::izip;
 use ndarray::{Array1, Array2, ArrayView1, ArrayView2};
 
 use super::helpers::{
@@ -25,13 +26,10 @@ impl Index {
         y: &ArrayView2<usize>,
         clusters_centroids: &Vec<Array2<f64>>,
     ) -> Result<Vec<f64>, CalcError> {
-        zip(
-            zip(scat, centroid_vars),
-            zip(y.columns(), clusters_centroids),
-        )
-        .into_iter()
-        .map(|((s, cv), (y, ctrds))| self.helper(s, cv, x, &y, ctrds))
-        .collect()
+        izip!(scat, centroid_vars, y.columns(), clusters_centroids,)
+            .into_iter()
+            .map(|(s, cv, y, ctrds)| self.helper(s, cv, x, &y, ctrds))
+            .collect()
     }
     fn helper(
         &self,
@@ -43,43 +41,53 @@ impl Index {
     ) -> Result<f64, CalcError> {
         let q = clusters_centroids.nrows();
         let stdev = centroid_vars.sum().sqrt() / q as f64;
-        let mut accum = 0;
+        let mut accum = 0.;
         for i in 0..q {
             for j in 0..q {
-                if i != j {
+                if i < j {
                     let density1 = Self::density(
                         stdev,
                         x,
                         y,
                         |v| v == i || v == j,
-                        ((&clusters_centroids.row(i) + &clusters_centroids.row(j)) / 2.).view(),
-                    );
-                    let density2 =
-                        Self::density(stdev, x, y, |v| v == i, clusters_centroids.row(i));
-                    let density3 =
-                        Self::density(stdev, x, y, |v| v == j, clusters_centroids.row(j));
+                        &((&clusters_centroids.row(i) + &clusters_centroids.row(j)) / 2.).view(),
+                    ) as f64;
+                    let density2 = Self::density(
+                        stdev,
+                        x,
+                        y,
+                        |v| v == i || v == j,
+                        &clusters_centroids.row(i),
+                    ) as f64;
+                    let density3 = Self::density(
+                        stdev,
+                        x,
+                        y,
+                        |v| v == i || v == j,
+                        &clusters_centroids.row(j),
+                    ) as f64;
                     accum += density1 / density2.max(density3);
                 }
             }
         }
-        let value = (accum / (q * (q - 1))) as f64;
-        Ok(value)
+        let value = 2. * (accum / (q * (q - 1)) as f64);
+        Ok(*scat + value)
     }
     fn density<F>(
         stdev: f64,
         x: &ArrayView2<f64>,
         y: &ArrayView1<usize>,
         predicat: F,
-        center: ArrayView1<f64>,
+        center: &ArrayView1<f64>,
     ) -> usize
     where
         F: Fn(usize) -> bool,
     {
         let mut retval: usize = 0;
         for (row, c) in zip(x.rows(), y) {
-            if predicat(*c as usize) {
-                let dist = (&row - &center).pow2().sum().sqrt();
-                retval += (dist <= stdev) as usize;
+            if predicat(*c) {
+                let dist = (&row - center).pow2().sum().sqrt();
+                retval += (dist < stdev) as i8 as usize;
             }
         }
         retval

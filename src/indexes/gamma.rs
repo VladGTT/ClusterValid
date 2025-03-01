@@ -14,12 +14,12 @@ pub struct GammaIndexValue {
 pub struct Index;
 
 impl Index {
-    fn compute(&self, s_plus: &Vec<usize>, s_minus: &Vec<usize>) -> Result<Vec<f64>, CalcError> {
+    fn compute(&self, s_plus: &Vec<isize>, s_minus: &Vec<isize>) -> Result<Vec<f64>, CalcError> {
         zip(s_plus, s_minus)
             .map(|(s_plus, s_minus)| self.helper(*s_plus, *s_minus))
             .collect()
     }
-    fn helper(&self, s_plus: usize, s_minus: usize) -> Result<f64, CalcError> {
+    fn helper(&self, s_plus: isize, s_minus: isize) -> Result<f64, CalcError> {
         let value = (s_plus - s_minus) as f64 / (s_plus + s_minus) as f64;
         Ok(value)
     }

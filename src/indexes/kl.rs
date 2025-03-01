@@ -19,11 +19,11 @@ impl Index {
         counts: &Vec<Vec<usize>>,
         wg: &Vec<Array2<f64>>,
     ) -> Result<Vec<f64>, CalcError> {
-        let diffs = izip!(counts, counts.iter().next(), wg, wg.iter().next(),)
+        let diffs = izip!(counts, counts[1..].iter(), wg, wg[1..].iter(),)
             .map(|(counts, counts_next, wg, wg_next)| self.helper(counts_next, wg_next, counts, wg))
             .collect::<Result<Vec<f64>, CalcError>>()?;
-        izip!(&diffs, diffs.iter().next())
-            .map(|(diff, diff_next)| Ok((diff_next / diff).abs()))
+        izip!(&diffs, diffs[1..].iter())
+            .map(|(diff_next, diff)| Ok((diff_next / diff)))
             .collect()
     }
     fn helper(
