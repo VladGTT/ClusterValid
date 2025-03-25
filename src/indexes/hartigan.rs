@@ -19,13 +19,13 @@ impl Index {
         counts: &Vec<Vec<usize>>,
         wg: &Vec<Array2<f64>>,
     ) -> Result<Vec<f64>, CalcError> {
-        izip!(counts[1..].iter(), wg, wg[1..].iter())
-            .map(|(counts_next, w_next, w)| {
+        izip!(counts, wg[0..].iter(), wg[1..].iter())
+            .map(|(counts, w, w_next)| {
                 let tracewg_next = w_next.diag().sum();
                 let tracewg = w.diag().sum();
-                let n = counts_next.iter().sum::<usize>() as f64;
-                let q = counts_next.len() as f64;
-                let val = (tracewg / tracewg_next - 1.) * (n - q - 1.);
+                let n = counts.iter().sum::<usize>() as f64;
+                let q = counts.len() as f64;
+                let val = (tracewg_next / tracewg - 1.) * (n - q + 1.);
                 Ok(val)
             })
             .collect()

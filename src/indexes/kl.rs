@@ -1,4 +1,4 @@
-use crate::calc_error::{CalcError, CombineErrors};
+use crate::{calc_error::{CalcError, CombineErrors}, indexes::helpers::counts};
 use ndarray::Array2;
 
 use crate::sender::{Sender, Subscriber};
@@ -19,12 +19,13 @@ impl Index {
         counts: &Vec<Vec<usize>>,
         wg: &Vec<Array2<f64>>,
     ) -> Result<Vec<f64>, CalcError> {
-        let diffs = izip!(counts, counts[1..].iter(), wg, wg[1..].iter(),)
-            .map(|(counts, counts_next, wg, wg_next)| self.helper(counts_next, wg_next, counts, wg))
-            .collect::<Result<Vec<f64>, CalcError>>()?;
-        izip!(&diffs, diffs[1..].iter())
-            .map(|(diff_next, diff)| Ok((diff_next / diff)))
-            .collect()
+        izip!(counts, counts[1..].iter(),counts[2..].iter(), wg, wg[1..].iter(), wg[2..].iter())
+            .map(|(counts, counts_next,counts_next_next, wg, wg_next,wg_next_next)| {
+                let diff = self.helper(counts_next_next, wg_next_next, counts_next, wg_next)?;
+                let diff_plus_one = self.helper(counts_next, wg_next, counts, wg)?;
+                Ok((diff/diff_plus_one).abs())
+            })
+            .collect::<Result<Vec<f64>, CalcError>>()
     }
     fn helper(
         &self,

@@ -1,9 +1,10 @@
+use std::f64;
 use std::sync::Arc;
 
 use crate::calc_error::{CalcError, CombineErrors};
 use crate::sender::{Sender, Subscriber};
 use itertools::izip;
-use ndarray::{s, ArcArray2, Array2, ArrayView1, ArrayView2};
+use ndarray::{s, ArcArray2, Array1, Array2, ArrayView1, ArrayView2};
 use ndarray_linalg::{Eig, Inverse, Scalar};
 
 use super::helpers::raw_data::RawDataValue;
@@ -59,27 +60,25 @@ impl Index {
             let x_ = ztz_inv.dot(&z.t()).dot(x);
             1. - (&xtx - x_.t().dot(&z.t()).dot(&z).dot(&x_)).diag().sum() / xtx.diag().sum()
         };
-
         let (p_star, u) = {
-            let mut p_star = q - 1;
-            let mut v_star = s_view.slice(s![0..p_star]).product();
-            let mut c = (v_star / q as f64).powf(1. / p_star as f64);
-            let mut u = &s / c;
-            for i in (1..q - 1).rev() {
-                if u[i] < 1. {
-                    break;
-                }
-                p_star = i;
-                v_star = s_view.slice(s![0..p_star]).product();
-                c = (v_star / q as f64).powf(1. / p_star as f64);
-                u = &s / c;
-            }
-            (p_star, u)
-        };
+            let vv = s_view.product();
+            let c = (vv as f64 /q as f64).powf(1./p as f64);
+            let u = &s_view / &(Array1::from_elem((s_view.len()),c)).view();
+            let k1 = u.iter().filter(|i|**i>=1.).count();
+            let p_star = k1.min(q-1);
 
+            let mut v1 = 1.;
+            for i in 0..p_star{
+                v1=v1*s_view[i]; 
+            }
+            let c = (v1/q as f64).powf(1./p_star as f64);
+            let u = &s_view / &(Array1::from_elem((s_view.len()),c)).view(); 
+            (p_star,u)
+        };
+        // return Err(CalcError::from(format!("{p} {u}")));
         let temp = {
             let a = (0..p_star).map(|i| 1. / (n as f64 + u[i])).sum::<f64>();
-            let b = (p_star + 1..p)
+            let b = (p_star..p) // p*+1..p
                 .map(|i| u[i].powi(2) / (n as f64 + u[i]))
                 .sum::<f64>();
             let c = (0..p).map(|i| u[i].powi(2)).sum::<f64>();

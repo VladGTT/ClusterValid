@@ -16,17 +16,17 @@ pub mod scott; //tested
 pub mod silhouette; //tested
 pub mod tau; //tested
 pub mod tracew; //tested
-                //
-pub mod ccc;
+                
+pub mod ccc; //tested
 pub mod hubert; //tested
-pub mod sd_dis;
-pub mod sdbw;
+pub mod sd_dis; //tested
+pub mod sdbw; //tested
 pub mod trcovw; //tested
-                //
-pub mod dindex;
-pub mod frey;
-pub mod hartigan;
-pub mod kl;
+                
+pub mod dindex; //tested
+pub mod frey; //tested
+pub mod hartigan; //tested
+pub mod kl; //tested
 //
 // pub mod beale;
 // pub mod duda;
