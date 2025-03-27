@@ -2412,6 +2412,70 @@ fn test_ccc_index4() {
 //
 //
 //
+#[test]
+fn test_xiebeni_index() {
+    let (x, y) = initialize();
+    let (x, y) = (x.view(), y.view());
+
+    let tree = IndexTreeBuilder::default().add_xiebeni().finish();
+
+    let start = std::time::Instant::now();
+    let res = tree.compute((x, y).into());
+    let end = std::time::Instant::now();
+    //
+    println!("Duration {} milisecs", (end - start).as_millis());
+    assert_float_absolute_eq!(res.xiebeni.unwrap().unwrap().val[0], 0.301695196899636, ACCURACY)
+}
+#[test]
+fn test_xiebeni_index2() {
+    let (x, y) = initialize2();
+    let (x, y) = (x.view(), y.view());
+
+    let tree = IndexTreeBuilder::default().add_xiebeni().finish();
+
+    let start = std::time::Instant::now();
+    let res = tree.compute((x, y).into());
+    let end = std::time::Instant::now();
+    //
+    println!("Duration {} milisecs", (end - start).as_millis());
+    assert_float_absolute_eq!(res.xiebeni.unwrap().unwrap().val[0], 1.65977788624617, ACCURACY)
+}
+#[test]
+fn test_xiebeni_index3() {
+    let (x, y) = initialize3();
+    let (x, y) = (x.view(), y.view());
+
+    let tree = IndexTreeBuilder::default().add_xiebeni().finish();
+
+    let start = std::time::Instant::now();
+    let res = tree.compute((x, y).into());
+    let end = std::time::Instant::now();
+    //
+    println!("Duration {} milisecs", (end - start).as_millis());
+    assert_float_absolute_eq!(res.xiebeni.unwrap().unwrap().val[0], 5.80236836018596, ACCURACY)
+}
+#[test]
+fn test_xiebeni_index4() {
+    let (x, y) = initialize4();
+    let (x, y) = (x.view(), y.view());
+
+    let tree = IndexTreeBuilder::default().add_xiebeni().finish();
+
+    let start = std::time::Instant::now();
+    let res = tree.compute((x, y).into());
+    let end = std::time::Instant::now();
+    //
+    println!("Duration {} milisecs", (end - start).as_millis());
+    assert_float_absolute_eq!(res.xiebeni.unwrap().unwrap().val[0], 0.568554263457564, ACCURACY)
+}
+
+//
+//
+//
+//
+//
+//
+//
 
 #[test]
 fn test_hartigan_index() {

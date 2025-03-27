@@ -30,6 +30,7 @@ use crate::indexes::silhouette::SilhouetteIndexValue;
 use crate::indexes::tau::TauIndexValue;
 use crate::indexes::tracew::TracewIndexValue;
 use crate::indexes::trcovw::TrcovwIndexValue;
+use crate::indexes::xiebeni::{self, XieBeniIndexValue};
 
 use crate::indexes::helpers::between_group_dispercion::BGDValue;
 use crate::indexes::helpers::clusters_centroids::ClustersCentroidsValue;
@@ -71,6 +72,7 @@ use crate::{
         tau::Node as TauNode,
         tracew::Node as TracewNode,
         trcovw::Node as TrcovwNode,
+        xiebeni::Node as XieBeniNode,
     },
     sender::{Sender, Subscriber},
 };
@@ -107,6 +109,7 @@ pub struct IndexTreeReturnValue {
     pub hartigan: Option<Result<HartiganIndexValue, CalcError>>,
     pub frey: Option<Result<FreyIndexValue, CalcError>>,
     pub kl: Option<Result<KLIndexValue, CalcError>>,
+    pub xiebeni: Option<Result<XieBeniIndexValue, CalcError>>,
 }
 
 // #[pymethods]
@@ -349,6 +352,11 @@ impl Subscriber<KLIndexValue> for IndexTreeReturnValue {
         self.kl = Some(data);
     }
 }
+impl Subscriber<XieBeniIndexValue> for IndexTreeReturnValue {
+    fn recieve_data(&mut self, data: Result<XieBeniIndexValue, CalcError>) {
+        self.xiebeni = Some(data);
+    }
+}
 pub struct IndexTree<'a> {
     raw_data: RawDataNode<'a>,
     retval: Arc<Mutex<IndexTreeReturnValue>>,
@@ -589,6 +597,17 @@ impl<'a> IndexTreeBuilder<'a> {
         self.scat_sender.add_subscriber(sdbw.clone());
 
         self.clusters_centroids_sender.add_subscriber(sdbw);
+        self
+    }
+    pub fn add_xiebeni(mut self) -> Self {
+        let xiebeni = Arc::new(Mutex::new(XieBeniNode::new(Sender::new(vec![self
+            .retval
+            .clone()]))));
+
+        self.wg_sender.add_subscriber(xiebeni.clone());
+        self.pairs_and_distances_sender.add_subscriber(xiebeni.clone());
+
+        self.counts_sender.add_subscriber(xiebeni);
         self
     }
     pub fn add_ccc(mut self) -> Self {

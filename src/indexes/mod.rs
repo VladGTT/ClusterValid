@@ -17,6 +17,7 @@ pub mod silhouette; //tested
 pub mod tau; //tested
 pub mod tracew; //tested
                 
+pub mod xiebeni;
 pub mod ccc; //tested
 pub mod hubert; //tested
 pub mod sd_dis; //tested
