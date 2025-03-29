@@ -132,8 +132,7 @@ mod clusterValid {
 
     #[pymodule_init]
     fn init(m: &Bound<'_, PyModule>) -> PyResult<()> {
-        m.add("compute_indexes", m.getattr("compute_indexes")?)?;
-        m.add("Config", m.getattr("IndexTreeConfig")?)?;
+        m.add("ClusterValid", m.getattr("ClusterValid)?)?;
         Ok(())
     }
 }
