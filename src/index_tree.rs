@@ -30,7 +30,7 @@ use crate::indexes::silhouette::SilhouetteIndexValue;
 use crate::indexes::tau::TauIndexValue;
 use crate::indexes::tracew::TracewIndexValue;
 use crate::indexes::trcovw::TrcovwIndexValue;
-use crate::indexes::xiebeni::{self, XieBeniIndexValue};
+use crate::indexes::xiebeni::{XieBeniIndexValue};
 
 use crate::indexes::helpers::between_group_dispercion::BGDValue;
 use crate::indexes::helpers::clusters_centroids::ClustersCentroidsValue;
@@ -76,10 +76,10 @@ use crate::{
     },
     sender::{Sender, Subscriber},
 };
-// use pyo3::{pyclass, pymethods};
+use pyo3::{pyclass, pymethods};
 use std::sync::{Arc, Mutex};
 
-// #[pyclass]
+#[pyclass]
 #[derive(Default, Debug, Clone)]
 pub struct IndexTreeReturnValue {
     pub ball_hall: Option<Result<BallHallIndexValue, CalcError>>,
@@ -112,109 +112,128 @@ pub struct IndexTreeReturnValue {
     pub xiebeni: Option<Result<XieBeniIndexValue, CalcError>>,
 }
 
-// #[pymethods]
-// impl IndexTreeReturnValue {
-//     #[getter]
-//     fn get_ball_hall(&self) -> Result<Option<Vec<f64>>, CalcError> {
-//         self.ball_hall.clone().map(|f| f.map(|v| v.val)).transpose()
-//     }
-//     #[getter]
-//     fn get_davies_bouldin(&self) -> Result<Option<f64>, CalcError> {
-//         self.davies_bouldin
-//             .clone()
-//             .map(|f| f.map(|v| v.val))
-//             .transpose()
-//     }
-//     #[getter]
-//     fn get_c_index(&self) -> Result<Option<f64>, CalcError> {
-//         self.c_index.clone().map(|f| f.map(|v| v.val)).transpose()
-//     }
-//     #[getter]
-//     fn get_calinski_harabasz(&self) -> Result<Option<f64>, CalcError> {
-//         self.calinski_harabasz
-//             .clone()
-//             .map(|f| f.map(|v| v.val))
-//             .transpose()
-//     }
-//     #[getter]
-//     fn get_dunn(&self) -> Result<Option<f64>, CalcError> {
-//         self.dunn.clone().map(|f| f.map(|v| v.val)).transpose()
-//     }
-//     #[getter]
-//     fn get_silhouette(&self) -> Result<Option<f64>, CalcError> {
-//         self.silhouette
-//             .clone()
-//             .map(|f| f.map(|v| v.val))
-//             .transpose()
-//     }
-//     #[getter]
-//     fn get_rubin(&self) -> Result<Option<f64>, CalcError> {
-//         self.rubin.clone().map(|f| f.map(|v| v.val)).transpose()
-//     }
-//     #[getter]
-//     fn get_mariott(&self) -> Result<Option<f64>, CalcError> {
-//         self.mariott.clone().map(|f| f.map(|v| v.val)).transpose()
-//     }
-//     #[getter]
-//     fn get_scott(&self) -> Result<Option<f64>, CalcError> {
-//         self.scott.clone().map(|f| f.map(|v| v.val)).transpose()
-//     }
-//     #[getter]
-//     fn get_friedman(&self) -> Result<Option<f64>, CalcError> {
-//         self.friedman.clone().map(|f| f.map(|v| v.val)).transpose()
-//     }
-//     #[getter]
-//     fn get_tau(&self) -> Result<Option<f64>, CalcError> {
-//         self.friedman.clone().map(|f| f.map(|v| v.val)).transpose()
-//     }
-//     #[getter]
-//     fn get_gamma(&self) -> Result<Option<f64>, CalcError> {
-//         self.gamma.clone().map(|f| f.map(|v| v.val)).transpose()
-//     }
-//     #[getter]
-//     fn get_gplus(&self) -> Result<Option<f64>, CalcError> {
-//         self.gplus.clone().map(|f| f.map(|v| v.val)).transpose()
-//     }
-//     #[getter]
-//     fn get_tracew(&self) -> Result<Option<f64>, CalcError> {
-//         self.tracew.clone().map(|f| f.map(|v| v.val)).transpose()
-//     }
-//     #[getter]
-//     fn get_mcclain(&self) -> Result<Option<f64>, CalcError> {
-//         self.mcclain.clone().map(|f| f.map(|v| v.val)).transpose()
-//     }
-//     #[getter]
-//     fn get_ptbiserial(&self) -> Result<Option<f64>, CalcError> {
-//         self.ptbiserial
-//             .clone()
-//             .map(|f| f.map(|v| v.val))
-//             .transpose()
-//     }
-//     #[getter]
-//     fn get_ratkowsky(&self) -> Result<Option<f64>, CalcError> {
-//         self.ratkowsky.clone().map(|f| f.map(|v| v.val)).transpose()
-//     }
-//     #[getter]
-//     fn get_trcovw(&self) -> Result<Option<f64>, CalcError> {
-//         self.trcovw.clone().map(|f| f.map(|v| v.val)).transpose()
-//     }
-//     #[getter]
-//     fn get_hubertw(&self) -> Result<Option<f64>, CalcError> {
-//         self.hubert.clone().map(|f| f.map(|v| v.val)).transpose()
-//     }
-//     #[getter]
-//     fn get_sd(&self) -> Result<Option<f64>, CalcError> {
-//         self.sd.clone().map(|f| f.map(|v| v.val)).transpose()
-//     }
-//     #[getter]
-//     fn get_sdbw(&self) -> Result<Option<f64>, CalcError> {
-//         self.sdbw.clone().map(|f| f.map(|v| v.val)).transpose()
-//     }
-//     #[getter]
-//     fn get_ccc(&self) -> Result<Option<f64>, CalcError> {
-//         self.ccc.clone().map(|f| f.map(|v| v.val)).transpose()
-//     }
-// }
+#[pymethods]
+impl IndexTreeReturnValue {
+    #[getter]
+    fn get_ball_hall(&self) -> Result<Option<Vec<f64>>, CalcError> {
+        self.ball_hall.clone().map(|f| f.map(|v| (*v.val).clone())).transpose()
+    }
+    #[getter]
+    fn get_davies_bouldin(&self) -> Result<Option<Vec<f64>>, CalcError> {
+        self.davies_bouldin
+            .clone().map(|f| f.map(|v| (*v.val).clone())).transpose()
+    }
+    #[getter]
+    fn get_c_index(&self) -> Result<Option<Vec<f64>>, CalcError> {
+        self.c_index
+            .clone().map(|f| f.map(|v| (*v.val).clone())).transpose()
+
+    }
+    #[getter]
+    fn get_calinski_harabasz(&self) ->  Result<Option<Vec<f64>>, CalcError> {
+        self.calinski_harabasz
+            .clone().map(|f| f.map(|v| (*v.val).clone())).transpose()
+                }
+    #[getter]
+    fn get_dunn(&self) -> Result<Option<Vec<f64>>, CalcError> {
+        self.dunn    
+            .clone().map(|f| f.map(|v| (*v.val).clone())).transpose()}
+    #[getter]
+    fn get_silhouette(&self) -> Result<Option<Vec<f64>>, CalcError> {
+        self.silhouette
+            .clone().map(|f| f.map(|v| (*v.val).clone())).transpose()}
+    #[getter]
+    fn get_rubin(&self) -> Result<Option<Vec<f64>>, CalcError> {
+        self.rubin    
+            .clone().map(|f| f.map(|v| (*v.val).clone())).transpose()}
+    #[getter]
+    fn get_mariott(&self) -> Result<Option<Vec<f64>>, CalcError> {
+        self.mariott.clone().map(|f| f.map(|v| (*v.val).clone())).transpose()
+    }
+    #[getter]
+    fn get_scott(&self) -> Result<Option<Vec<f64>>, CalcError> {
+        self.scott.clone().map(|f| f.map(|v| (*v.val).clone())).transpose()
+    }
+    #[getter]
+    fn get_friedman(&self) -> Result<Option<Vec<f64>>, CalcError> {
+        self.friedman.clone().map(|f| f.map(|v| (*v.val).clone())).transpose()
+    }
+    #[getter]
+    fn get_tau(&self) -> Result<Option<Vec<f64>>, CalcError> {
+        self.friedman.clone().map(|f| f.map(|v| (*v.val).clone())).transpose()
+    }
+    #[getter]
+    fn get_gamma(&self) -> Result<Option<Vec<f64>>, CalcError> {
+        self.gamma.clone().map(|f| f.map(|v| (*v.val).clone())).transpose()
+    }
+    #[getter]
+    fn get_gplus(&self) -> Result<Option<Vec<f64>>, CalcError> {
+        self.gplus.clone().map(|f| f.map(|v| (*v.val).clone())).transpose()
+    }
+    #[getter]
+    fn get_tracew(&self) -> Result<Option<Vec<f64>>, CalcError> {
+        self.tracew.clone().map(|f| f.map(|v| (*v.val).clone())).transpose()
+    }
+    #[getter]
+    fn get_mcclain(&self) -> Result<Option<Vec<f64>>, CalcError> {
+        self.mcclain.clone().map(|f| f.map(|v| (*v.val).clone())).transpose()
+    }
+    #[getter]
+    fn get_ptbiserial(&self) -> Result<Option<Vec<f64>>, CalcError> {
+        self.ptbiserial
+            .clone()
+            .map(|f| f.map(|v| (*v.val).clone()))
+            .transpose()
+    }
+    #[getter]
+    fn get_ratkowsky(&self) -> Result<Option<Vec<f64>>, CalcError> {
+        self.ratkowsky.clone().map(|f| f.map(|v| (*v.val).clone())).transpose()
+    }
+    #[getter]
+    fn get_trcovw(&self) -> Result<Option<Vec<f64>>, CalcError> {
+        self.trcovw.clone().map(|f| f.map(|v| (*v.val).clone())).transpose()
+    }
+    #[getter]
+    fn get_hubertw(&self) -> Result<Option<Vec<f64>>, CalcError> {
+        self.hubert.clone().map(|f| f.map(|v| (*v.val).clone())).transpose()
+    }
+    #[getter]
+    fn get_sd_scat(&self) -> Result<Option<Vec<f64>>, CalcError> {
+        self.sd_scat.clone().map(|f| f.map(|v| (*v.val).clone())).transpose()
+    }
+    #[getter]
+    fn get_sd_dis(&self) -> Result<Option<Vec<f64>>, CalcError> {
+        self.sd_dis.clone().map(|f| f.map(|v| (*v.val).clone())).transpose()
+    }
+    #[getter]
+    fn get_sdbw(&self) -> Result<Option<Vec<f64>>, CalcError> {
+        self.sdbw.clone().map(|f| f.map(|v| (*v.val).clone())).transpose()
+    }
+    #[getter]
+    fn get_ccc(&self) -> Result<Option<Vec<f64>>, CalcError> {
+        self.ccc.clone().map(|f| f.map(|v| (*v.val).clone())).transpose()
+    }
+    #[getter]
+    fn get_dindex(&self) -> Result<Option<Vec<f64>>, CalcError> {
+        self.dindex.clone().map(|f| f.map(|v| (*v.val).clone())).transpose()
+    }
+    #[getter]
+    fn get_frey(&self) -> Result<Option<Vec<f64>>, CalcError> {
+        self.frey.clone().map(|f| f.map(|v| (*v.val).clone())).transpose()
+    }
+    #[getter]
+    fn get_kl(&self) -> Result<Option<Vec<f64>>, CalcError> {
+        self.kl.clone().map(|f| f.map(|v| (*v.val).clone())).transpose()
+    }    
+    #[getter]
+    fn get_xiebeni(&self) -> Result<Option<Vec<f64>>, CalcError> {
+        self.xiebeni.clone().map(|f| f.map(|v| (*v.val).clone())).transpose()
+    }
+    #[getter]
+    fn get_hartigan(&self) -> Result<Option<Vec<f64>>, CalcError> {
+        self.hartigan.clone().map(|f| f.map(|v| (*v.val).clone())).transpose()
+    }
+}
 
 impl Subscriber<BallHallIndexValue> for IndexTreeReturnValue {
     fn recieve_data(&mut self, data: Result<BallHallIndexValue, CalcError>) {

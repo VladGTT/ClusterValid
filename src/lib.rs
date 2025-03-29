@@ -7,143 +7,133 @@ mod tests;
 
 use pyo3::prelude::*;
 #[pymodule]
-mod rust_ext {
+mod clusterValid {
     use super::*;
-    use core::f64;
-    use index_tree::{IndexTreeBuilder, IndexTreeReturnValue};
-    use numpy::{npyffi::npy_int32, PyReadonlyArray1, PyReadonlyArray2};
+    use index_tree::{IndexTreeBuilder, IndexTreeReturnValue,IndexTree};
+    use numpy::{npyffi::npy_uint64,  PyReadonlyArray2};
 
-    #[pyclass(frozen)]
-    #[derive(Default, Debug)]
-    struct IndexTreeConfig {
-        pub ball_hall: bool,
-        // pub davies_bouldin: bool,
-        // pub c_index: bool,
-        // pub calinski_harabasz: bool,
-        // pub dunn: bool,
-        // pub silhouette: bool,
-        // pub rubin: bool,
-        // pub mariott: bool,
-        // pub scott: bool,
-        // pub friedman: bool,
-        // pub tau: bool,
-        // pub gamma: bool,
-        // pub gplus: bool,
-        // pub tracew: bool,
-        // pub mcclain: bool,
-        // pub ptbiserial: bool,
+    #[pyclass]
+    struct ClusterValid{
+        indexes:  Vec<String>
+
     }
     #[pymethods]
-    impl IndexTreeConfig {
+    impl ClusterValid{
         #[new]
         fn new(
-            ball_hall: bool,
-            // davies_bouldin: bool,
-            // c_index: bool,
-            // calinski_harabasz: bool,
-            // dunn: bool,
-            // silhouette: bool,
-            // rubin: bool,
-            // mariott: bool,
-            // scott: bool,
-            // friedman: bool,
-            // tau: bool,
-            // gamma: bool,
-            // gplus: bool,
-            // tracew: bool,
-            // mcclain: bool,
-            // ptbiserial: bool,
+ indexes: Vec<String>
+
         ) -> Self {
+        
             Self {
-                ball_hall,
-                // davies_bouldin,
-                // c_index,
-                // dunn,
-                // calinski_harabasz,
-                // silhouette,
-                // rubin,
-                // mariott,
-                // scott,
-                // friedman,
-                // tau,
-                // gamma,
-                // gplus,
-                // tracew,
-                // mcclain,
-                // ptbiserial,
+                indexes
             }
         }
+        fn compute<'py>(
+            &self,
+            x: PyReadonlyArray2<'py, f64>,
+            y: PyReadonlyArray2<'py, npy_uint64>) -> IndexTreeReturnValue {
+            let x = x.as_array();
+            let y = y.as_array().map(|x|*x as usize);
+            let y = y.view();
+            let tree = {
+            let mut builder = IndexTreeBuilder::default();
+            if self.indexes.contains(&"Ball-Hall".to_string()) {
+                builder = builder.add_ball_hall();
+            }
+            if  self.indexes.contains(&"DB".to_string()){
+                builder = builder.add_davies_bouldin();
+            }
+            if self.indexes.contains(&"Silhouette".to_string()){
+                builder = builder.add_silhouette();
+            }
+            if self.indexes.contains(&"C-Index".to_string()){
+                builder = builder.add_c_index();
+            }
+            if self.indexes.contains(&"Dunn".to_string()){
+                builder = builder.add_dunn();
+            }
+            if  self.indexes.contains(&"CH".to_string()){
+                builder = builder.add_calinski_harabasz();
+            }
+            if  self.indexes.contains(&"Rubin".to_string()){
+                builder = builder.add_rubin();
+            }
+            if self.indexes.contains(&"Mariott".to_string()){
+                builder = builder.add_mariott();
+            }
+            if self.indexes.contains(&"Scott".to_string()){
+                builder = builder.add_scott();
+            }
+            if self.indexes.contains(&"Friedman".to_string()){
+                builder = builder.add_friedman();
+            }
+            if self.indexes.contains(&"Tau".to_string()){
+                builder = builder.add_tau();
+            }
+            if self.indexes.contains(&"Gamma".to_string()){
+                builder = builder.add_gamma();
+            }
+            if self.indexes.contains(&"G+".to_string()){
+                builder = builder.add_gplus();
+            }
+            if self.indexes.contains(&"TraceW".to_string()){
+                builder = builder.add_tracew();
+            }
+            if self.indexes.contains(&"Mcclain".to_string()){
+                builder = builder.add_mcclain();
+            }
+            if self.indexes.contains(&"PtBiserial".to_string()){
+                builder = builder.add_ptbiserial();
+            }
+            if self.indexes.contains(&"Ratkowsky".to_string()){
+                builder = builder.add_ratkowsky();
+            }
+            if self.indexes.contains(&"TrcovW".to_string()){
+                builder = builder.add_trcovw();
+            }
+            if self.indexes.contains(&"Hubert".to_string()){
+                builder = builder.add_hubert();
+            }
+            if self.indexes.contains(&"SD-dis".to_string()){
+                builder = builder.add_sd_dis();
+            }
+            if self.indexes.contains(&"SD-scat".to_string()){
+                builder = builder.add_sd_scat();
+            }
+            if self.indexes.contains(&"SDBW".to_string()){
+                builder = builder.add_sdbw();
+            }
+            if self.indexes.contains(&"CCC".to_string()){
+                builder = builder.add_ccc();
+            }
+            if self.indexes.contains(&"D-index".to_string()){
+                builder = builder.add_dindex();
+            }
+            if self.indexes.contains(&"Hartigan".to_string()){
+                builder = builder.add_hartigan();
+            }
+            if self.indexes.contains(&"Frey".to_string()){
+                builder = builder.add_frey();
+            }
+            if self.indexes.contains(&"KL".to_string()){
+                builder = builder.add_kl();
+            }
+            if self.indexes.contains(&"Xie-Beni".to_string()){
+                builder = builder.add_xiebeni();
+            }
+
+            builder.finish()
+        };
+            tree.compute((x, y).into())
+        }
+
     }
 
-    // #[pymodule_init]
-    // fn init(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    //     m.add("compute_indexes", m.getattr("compute_indexes")?)?;
-    //     m.add("Config", m.getattr("IndexTreeConfig")?)?;
-    //     Ok(())
-    // }
-    // #[pyfunction]
-    // fn compute_indexes<'py>(
-    //     py: Python<'py>,
-    //     x: PyReadonlyArray2<'py, f64>,
-    //     y: PyReadonlyArray1<'py, npy_int32>,
-    //     config: Py<IndexTreeConfig>,
-    // ) -> PyResult<Py<IndexTreeReturnValue>> {
-    //     let x = x.as_array();
-    //     let y = y.as_array();
-    //
-    //     let tree = {
-    //         let config = config.get();
-    //         let mut builder = IndexTreeBuilder::default();
-    //         if config.ball_hall {
-    //             builder = builder.add_ball_hall();
-    //         }
-    //         // if config.davies_bouldin {
-    //         //     builder = builder.add_davies_bouldin();
-    //         // }
-    //         // if config.silhouette {
-    //         //     builder = builder.add_silhouette();
-    //         // }
-    //         // if config.c_index {
-    //         //     builder = builder.add_c_index();
-    //         // }
-    //         // if config.dunn {
-    //         //     builder = builder.add_dunn();
-    //         // }
-    //         // if config.calinski_harabasz {
-    //         //     builder = builder.add_calinski_harabasz();
-    //         // }
-    //         // if config.rubin {
-    //         //     builder = builder.add_rubin();
-    //         // }
-    //         // if config.mariott {
-    //         //     builder = builder.add_mariott();
-    //         // }
-    //         // if config.scott {
-    //         //     builder = builder.add_scott();
-    //         // }
-    //         // if config.friedman {
-    //         //     builder = builder.add_friedman();
-    //         // }
-    //         // if config.tau {
-    //         //     builder = builder.add_tau();
-    //         // }
-    //         // if config.gamma {
-    //         //     builder = builder.add_gamma();
-    //         // }
-    //         // if config.gplus {
-    //         //     builder = builder.add_gplus();
-    //         // }
-    //         // if config.tracew {
-    //         //     builder = builder.add_tracew();
-    //         // }
-    //         // if config.mcclain {
-    //         //     builder = builder.add_mcclain();
-    //         // }
-    //         // if config.ptbiserial {
-    //         //     builder = builder.add_ptbiserial();
-    //         // }
-    //         builder.finish()
-    //     };
-    //     Py::new(py, tree.compute((x, y)))
-    // }
+    #[pymodule_init]
+    fn init(m: &Bound<'_, PyModule>) -> PyResult<()> {
+        m.add("compute_indexes", m.getattr("compute_indexes")?)?;
+        m.add("Config", m.getattr("IndexTreeConfig")?)?;
+        Ok(())
+    }
 }
