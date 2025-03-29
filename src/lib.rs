@@ -132,7 +132,7 @@ mod clusterValid {
 
     #[pymodule_init]
     fn init(m: &Bound<'_, PyModule>) -> PyResult<()> {
-        m.add("ClusterValid", m.getattr("ClusterValid)?)?;
+        m.add("ClusterValid", m.getattr("ClusterValid")?)?;
         Ok(())
     }
 }
