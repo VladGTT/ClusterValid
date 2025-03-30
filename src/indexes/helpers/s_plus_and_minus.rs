@@ -37,29 +37,48 @@ impl Index {
         distances: &Array1<f64>,
     ) -> Result<(isize, isize, isize), CalcError> {
         // let (mut s_plus, mut s_minus, mut ties) = (-42, 35, 0);
-        let (mut s_plus, mut s_minus, mut ties) = (0, 0, 0);
+        // let (mut s_plus, mut s_minus, mut ties) = (0, 0, 0);
+        //
+        // // finding s_plus which represents the number of times a distance between two points
+        // // which belong to the same cluster is strictly smaller than the distance between two points not belonging to the same cluster
+        // // and s_minus which represents the number of times distance between two points lying in the same cluster  is strictly greater than a distance between two points not
+        // //belonging to the same cluster
+        //
+        // for (i, (d1, b1)) in zip(distances, pairs_in_the_same_cluster).enumerate() {
+        //     for (j, (d2, b2)) in zip(distances, pairs_in_the_same_cluster).enumerate() {
+        //         if (*b1 == 1 && *b2 == 0) {
+        //             if d1 < d2 {
+        //                 s_plus += 1;
+        //             }
+        //             if d1 > d2 {
+        //                 s_minus += 1;
+        //             }
+        //             if d1 == d2 {
+        //                 ties += 1;
+        //             }
+        //         }
+        //     }
+        // }
+        // Ok((s_plus, s_minus, ties))
+let (mut s_plus, mut s_minus, mut ties) = (0, 0, 0);
 
-        // finding s_plus which represents the number of times a distance between two points
-        // which belong to the same cluster is strictly smaller than the distance between two points not belonging to the same cluster
-        // and s_minus which represents the number of times distance between two points lying in the same cluster  is strictly greater than a distance between two points not
-        //belonging to the same cluster
-
-        for (i, (d1, b1)) in zip(distances, pairs_in_the_same_cluster).enumerate() {
-            for (j, (d2, b2)) in zip(distances, pairs_in_the_same_cluster).enumerate() {
-                if (*b1 == 1 && *b2 == 0) {
+    for (&d1, &b1) in distances.iter().zip(pairs_in_the_same_cluster) {
+        if b1 == 1 {
+            for (&d2, &b2) in distances.iter().zip(pairs_in_the_same_cluster) {
+                if b2 == 0 {
                     if d1 < d2 {
                         s_plus += 1;
-                    }
-                    if d1 > d2 {
+                    } else if d1 > d2 {
                         s_minus += 1;
-                    }
-                    if d1 == d2 {
+                    } else {
                         ties += 1;
                     }
                 }
             }
         }
-        Ok((s_plus, s_minus, ties))
+    }
+    
+    Ok((s_plus, s_minus, ties))
     }
 }
 #[derive(Default)]
