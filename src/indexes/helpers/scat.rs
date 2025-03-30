@@ -4,7 +4,7 @@ use crate::{
     calc_error::CalcError,
     sender::{Sender, Subscriber},
 };
-use ndarray::{ArcArray1, Array1, Array2, ArrayView1, ArrayView2, Axis};
+use ndarray::{Array1, Array2, ArrayView1, ArrayView2, Axis};
 
 use super::raw_data::RawDataValue;
 #[derive(Debug, Clone)]
@@ -19,7 +19,7 @@ impl Index {
     pub fn compute(
         &self,
         x: &ArrayView2<f64>,
-        y: &ArrayView2<usize>,
+        y: &ArrayView2<u32>,
     ) -> Result<(Vec<f64>, Vec<Array1<f64>>, Vec<f64>), CalcError> {
         y.columns()
             .into_iter()
@@ -35,7 +35,7 @@ impl Index {
     fn helper(
         &self,
         x: &ArrayView2<f64>,
-        y: &ArrayView1<usize>,
+        y: &ArrayView1<u32>,
     ) -> Result<(f64, Array1<f64>, f64), CalcError> {
         let var = x.var_axis(Axis(0), 0.);
         let q = *y.iter().max().ok_or("Cant get max cluster index")? as usize + 1;

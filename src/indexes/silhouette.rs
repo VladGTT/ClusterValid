@@ -17,14 +17,14 @@ impl Index {
     pub fn compute(
         &self,
         x: &ArrayView2<f64>,
-        y: &ArrayView2<usize>,
+        y: &ArrayView2<u32>,
     ) -> Result<Vec<f64>, CalcError> {
         y.columns()
             .into_iter()
             .map(|c| self.helper(x, &c))
             .collect()
     }
-    fn helper(&self, x: &ArrayView2<f64>, y: &ArrayView1<usize>) -> Result<f64, CalcError> {
+    fn helper(&self, x: &ArrayView2<f64>, y: &ArrayView1<u32>) -> Result<f64, CalcError> {
         let q = *y.iter().max().ok_or("Cant get numb of clusters")? + 1;
         let s = zip(x.rows(), y)
             .map(|(row, c)| {
@@ -38,10 +38,10 @@ impl Index {
                 for (row2, c2) in zip(x.rows(), y) {
                     if c2 != c {
                         let dist = (&row2 - &row).pow2().sum().sqrt();
-                        if bcvec.contains_key(c2) {
-                            bcvec.get_mut(c2).ok_or("Cant get b(i)")?.push(dist);
+                        if bcvec.contains_key(&(*c2 as usize)) {
+                            bcvec.get_mut(&(*c2 as usize)).ok_or("Cant get b(i)")?.push(dist);
                         } else {
-                            bcvec.insert(*c2, vec![dist]);
+                            bcvec.insert(*c2 as usize, vec![dist]);
                         }
                     }
                 }

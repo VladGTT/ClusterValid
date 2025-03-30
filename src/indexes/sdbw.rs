@@ -23,7 +23,7 @@ impl Index {
         scat: &Vec<f64>,
         centroid_vars: &Vec<Array1<f64>>,
         x: &ArrayView2<f64>,
-        y: &ArrayView2<usize>,
+        y: &ArrayView2<u32>,
         clusters_centroids: &Vec<Array2<f64>>,
     ) -> Result<Vec<f64>, CalcError> {
         izip!(scat, centroid_vars, y.columns(), clusters_centroids,)
@@ -36,7 +36,7 @@ impl Index {
         scat: &f64,
         centroid_vars: &Array1<f64>,
         x: &ArrayView2<f64>,
-        y: &ArrayView1<usize>,
+        y: &ArrayView1<u32>,
         clusters_centroids: &Array2<f64>,
     ) -> Result<f64, CalcError> {
         let q = clusters_centroids.nrows();
@@ -76,7 +76,7 @@ impl Index {
     fn density<F>(
         stdev: f64,
         x: &ArrayView2<f64>,
-        y: &ArrayView1<usize>,
+        y: &ArrayView1<u32>,
         predicat: F,
         center: &ArrayView1<f64>,
     ) -> usize
@@ -85,7 +85,7 @@ impl Index {
     {
         let mut retval: usize = 0;
         for (row, c) in zip(x.rows(), y) {
-            if predicat(*c) {
+            if predicat(*c as usize) {
                 let dist = (&row - center).pow2().sum().sqrt();
                 retval += (dist < stdev) as i8 as usize;
             }

@@ -15,7 +15,7 @@ impl PairsAndDistances {
     fn compute(
         &self,
         x: &ArrayView2<f64>,
-        y: &ArrayView2<usize>,
+        y: &ArrayView2<u32>,
     ) -> Result<(Vec<Array1<i8>>, Vec<Array1<f64>>), CalcError> {
         y.columns()
             .into_iter()
@@ -26,7 +26,7 @@ impl PairsAndDistances {
     fn helper(
         &self,
         x: &ArrayView2<f64>,
-        y: &ArrayView1<usize>,
+        y: &ArrayView1<u32>,
     ) -> Result<(Array1<i8>, Array1<f64>), CalcError> {
         let n = y.len() * (y.len() - 1) / 2;
         let mut distances: Vec<f64> = Vec::with_capacity(n);

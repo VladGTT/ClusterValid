@@ -4,7 +4,7 @@ use std::sync::Arc;
 use crate::calc_error::{CalcError, CombineErrors};
 use crate::sender::{Sender, Subscriber};
 use itertools::izip;
-use ndarray::{s, ArcArray2, Array1, Array2, ArrayView1, ArrayView2};
+use ndarray::{ ArcArray2, Array1, Array2, ArrayView1, ArrayView2};
 use ndarray_linalg::{Eig, Inverse, Scalar};
 
 use super::helpers::raw_data::RawDataValue;
@@ -22,7 +22,7 @@ impl Index {
     pub fn compute(
         &self,
         x: &ArrayView2<f64>,
-        y: &ArrayView2<usize>,
+        y: &ArrayView2<u32>,
         wg: &Vec<Array2<f64>>,
         td: &ArcArray2<f64>,
     ) -> Result<Vec<f64>, CalcError> {
@@ -33,13 +33,13 @@ impl Index {
     pub fn helper(
         &self,
         x: &ArrayView2<f64>,
-        y: &ArrayView1<usize>,
+        y: &ArrayView1<u32>,
         wg: &ArrayView2<f64>,
         td: &ArrayView2<f64>,
     ) -> Result<f64, CalcError> {
         let n = x.nrows();
         let p = x.ncols();
-        let q = *y.iter().max().ok_or("Cant find max")? + 1;
+        let q = (*y.iter().max().ok_or("Cant find max")? + 1) as usize;
         let xtx = x.t().dot(x);
         let m = &xtx / (n as f64 - 1.);
         let (eigvals_m, _) = m.eig().map_err(|v| v.to_string())?;
@@ -49,7 +49,7 @@ impl Index {
         let z = {
             let mut retval: Array2<f64> = Array2::zeros((n, q));
             for (i, c) in y.iter().enumerate() {
-                *retval.get_mut((i, *c)).ok_or("Cant get value")? = 1.;
+                *retval.get_mut((i, *c as usize)).ok_or("Cant get value")? = 1.;
             }
             retval
         };
@@ -63,7 +63,7 @@ impl Index {
         let (p_star, u) = {
             let vv = s_view.product();
             let c = (vv as f64 /q as f64).powf(1./p as f64);
-            let u = &s_view / &(Array1::from_elem((s_view.len()),c)).view();
+            let u = &s_view / &(Array1::from_elem(s_view.len(),c)).view();
             let k1 = u.iter().filter(|i|**i>=1.).count();
             let p_star = k1.min(q-1);
 
@@ -72,7 +72,7 @@ impl Index {
                 v1=v1*s_view[i]; 
             }
             let c = (v1/q as f64).powf(1./p_star as f64);
-            let u = &s_view / &(Array1::from_elem((s_view.len()),c)).view(); 
+            let u = &s_view / &(Array1::from_elem(s_view.len(),c)).view(); 
             (p_star,u)
         };
         // return Err(CalcError::from(format!("{p} {u}")));

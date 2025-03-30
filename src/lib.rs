@@ -12,7 +12,7 @@ mod cluster_valid {
 
     use super::*;
     use index_tree::{IndexTreeBuilder, IndexTreeReturnValue,IndexTree};
-    use numpy::{npyffi::npy_uint64,  PyReadonlyArray2};
+    use numpy::{npyffi::{npy_int32, npy_uint, npy_uint32, npy_uint64},  PyReadonlyArray2};
 
 #[pyclass]
 struct ClusterValid {
@@ -86,11 +86,10 @@ impl ClusterValid {
     fn compute<'py>(
         &self,
         x: PyReadonlyArray2<'py, f64>,
-        y: PyReadonlyArray2<'py, npy_uint64>,
+        y: PyReadonlyArray2<'py, npy_uint32>,
     ) -> IndexTreeReturnValue {
         let x = x.as_array();
-        let y = y.as_array().map(|x| *x as usize);
-        let y = y.view();
+        let y = y.as_array();
         let mut builder = IndexTreeBuilder::default();
 
         if self.ball_hall { builder = builder.add_ball_hall(); }

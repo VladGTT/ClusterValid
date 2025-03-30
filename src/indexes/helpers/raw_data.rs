@@ -3,7 +3,7 @@ use ndarray::ArrayView2;
 #[derive(Debug, Clone)]
 pub struct RawDataValue<'a> {
     pub x: ArrayView2<'a, f64>,
-    pub y: ArrayView2<'a, usize>,
+    pub y: ArrayView2<'a, u32>,
 }
 pub struct RawDataNode<'a> {
     pub sender: Sender<'a, RawDataValue<'a>>,
@@ -17,8 +17,8 @@ impl<'a> RawDataNode<'a> {
         self.sender.send_to_subscribers(Ok(data));
     }
 }
-impl<'a> From<(ArrayView2<'a, f64>, ArrayView2<'a, usize>)> for RawDataValue<'a> {
-    fn from(value: (ArrayView2<'a, f64>, ArrayView2<'a, usize>)) -> Self {
+impl<'a> From<(ArrayView2<'a, f64>, ArrayView2<'a, u32>)> for RawDataValue<'a> {
+    fn from(value: (ArrayView2<'a, f64>, ArrayView2<'a, u32>)) -> Self {
         Self {
             x: value.0,
             y: value.1,

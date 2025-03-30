@@ -2,7 +2,7 @@ use crate::{
     calc_error::{CalcError, CombineErrors},
     sender::{Sender, Subscriber},
 };
-use ndarray::{ArcArray1, ArcArray2, Array2, ArrayView1, ArrayView2};
+use ndarray::{ Array2, ArrayView1, ArrayView2};
 use std::iter::zip;
 
 use super::{counts::CountsValue, raw_data::RawDataValue};
@@ -16,7 +16,7 @@ impl ClustersCentroids {
     pub fn compute(
         &self,
         data: &ArrayView2<f64>,
-        clusters: &ArrayView2<usize>,
+        clusters: &ArrayView2<u32>,
         counts: &Vec<Vec<usize>>,
     ) -> Result<Vec<Array2<f64>>, CalcError> {
         zip(clusters.columns(), counts)
@@ -26,7 +26,7 @@ impl ClustersCentroids {
     fn compute_centroids_for_column(
         &self,
         data: &ArrayView2<f64>,
-        clusters: &ArrayView1<usize>,
+        clusters: &ArrayView1<u32>,
         counts: &Vec<usize>,
     ) -> Result<Array2<f64>, CalcError> {
         let q = counts.len();

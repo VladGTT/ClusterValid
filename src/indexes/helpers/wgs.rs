@@ -5,7 +5,7 @@ use crate::{
 };
 
 use itertools::izip;
-use ndarray::{ArcArray2, Array2, ArrayView1, ArrayView2};
+use ndarray::{Array2, ArrayView1, ArrayView2};
 
 use super::{counts, raw_data::RawDataValue};
 use std::sync::Arc;
@@ -20,7 +20,7 @@ impl WGD {
     pub fn compute(
         &self,
         x: &ArrayView2<f64>,
-        y: &ArrayView2<usize>,
+        y: &ArrayView2<u32>,
         clusters_centroids: &Vec<Array2<f64>>,
         counts: &Vec<Vec<usize>>,
     ) -> Result<Vec<Vec<Array2<f64>>>, CalcError> {
@@ -31,7 +31,7 @@ impl WGD {
     fn helper(
         &self,
         x: &ArrayView2<f64>,
-        y: &ArrayView1<usize>,
+        y: &ArrayView1<u32>,
         clusters_centroids: &Array2<f64>,
         counts: &Vec<usize>,
     ) -> Result<Vec<Array2<f64>>, CalcError> {
@@ -40,8 +40,8 @@ impl WGD {
             retval.push(Array2::zeros((0, x.ncols())));
         }
         for (x, y) in izip!(x.rows(), y) {
-            let dif = &x - &clusters_centroids.row(*y);
-            retval[*y].push_row(dif.view());
+            let dif = &x - &clusters_centroids.row(*y as usize);
+            retval[*y as usize].push_row(dif.view());
         }
         let retval = retval
             .iter()

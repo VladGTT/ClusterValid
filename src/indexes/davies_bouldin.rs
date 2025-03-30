@@ -17,7 +17,7 @@ impl Index {
     pub fn compute(
         &self,
         x: &ArrayView2<f64>,
-        y: &ArrayView2<usize>,
+        y: &ArrayView2<u32>,
         clusters_centroids: &Vec<Array2<f64>>,
     ) -> Result<Vec<f64>, CalcError> {
         zip(y.columns(), clusters_centroids)
@@ -27,7 +27,7 @@ impl Index {
     fn helper(
         &self,
         x: &ArrayView2<f64>,
-        y: &ArrayView1<usize>,
+        y: &ArrayView1<u32>,
         clusters_centroids: &Array2<f64>,
     ) -> Result<f64, CalcError> {
         let q = clusters_centroids.nrows();

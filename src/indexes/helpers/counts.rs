@@ -3,7 +3,7 @@ use crate::{
     sender::{Sender, Subscriber},
 };
 use itertools::Itertools;
-use ndarray::{ArcArray1, Array1, ArrayView1, ArrayView2};
+use ndarray::ArrayView2;
 use std::sync::Arc;
 
 use super::raw_data::RawDataValue;
@@ -14,7 +14,7 @@ pub struct CountsValue {
 #[derive(Default)]
 pub struct Counts;
 impl Counts {
-    pub fn compute(&self, clusters: &ArrayView2<usize>) -> Result<Vec<Vec<usize>>, CalcError> {
+    pub fn compute(&self, clusters: &ArrayView2<u32>) -> Result<Vec<Vec<usize>>, CalcError> {
         let counts = clusters
             .columns()
             .into_iter()

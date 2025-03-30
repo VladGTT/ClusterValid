@@ -19,7 +19,7 @@ impl Index {
     pub fn compute(
         &self,
         x: &ArrayView2<f64>,
-        y: &ArrayView2<usize>,
+        y: &ArrayView2<u32>,
         clusters_centroids: &Vec<Array2<f64>>,
         counts: &Vec<Vec<usize>>,
     ) -> Result<Vec<f64>, CalcError> {
@@ -34,15 +34,15 @@ impl Index {
     fn helper(
         &self,
         x: &ArrayView2<f64>,
-        y: &ArrayView1<usize>,
+        y: &ArrayView1<u32>,
         clusters_centroids: &Array2<f64>,
         counts: &Vec<usize>,
     ) -> Result<f64, CalcError> {
         let q = counts.iter().sum::<usize>();
         let mut stor: Array1<f64> = Array1::default((q));
         for (row, c) in zip(x.rows(), y) {
-            let dist = (&clusters_centroids.row(*c) - &row).pow2().sum().sqrt();
-            stor[*c] += dist;
+            let dist = (&clusters_centroids.row(*c as usize) - &row).pow2().sum().sqrt();
+            stor[*c as usize] += dist;
         }
         stor.iter_mut()
             .enumerate()
