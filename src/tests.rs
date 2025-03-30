@@ -3080,6 +3080,7 @@ fn test_kl_index4() {
 //     let (x, y) = initialize5();
 //     let (x, y) = (x.view(), y.view());
 //
+//     let start = std::time::Instant::now();
 //     let tree = IndexTreeBuilder::default()
 //         .add_ball_hall()
 //         .add_c_index()
@@ -3105,12 +3106,16 @@ fn test_kl_index4() {
 //         .add_sd_dis()
 //         .finish();
 //
+//     let end = std::time::Instant::now();
+//     let prep_dur = (end - start).as_nanos();
+//     println!("Duration {} nanos",prep_dur );
 //     let start = std::time::Instant::now();
 //     let res = tree.compute((x, y).into());
 //     let end = std::time::Instant::now();
 //     //
-//     println!("Duration {} milisecs", (end - start).as_millis());
-//     panic!("{res:?}")
+//     let comp_dur = (end - start).as_nanos();
+//     println!("Duration {} nanos",comp_dur);
+//     panic!("{} nanos",comp_dur+prep_dur)
 // }
 
 fn heirarchy1()->Array2<usize>{

@@ -1,10 +1,9 @@
-use std::iter::zip;
 use std::sync::Arc;
 
 use crate::calc_error::{CalcError, CombineErrors};
 use crate::sender::{Sender, Subscriber};
+use itertools::izip;
 use ndarray::Array2;
-
 use super::helpers::counts::CountsValue;
 use super::helpers::within_group_dispercion::WGDValue;
 #[derive(Clone, Debug)]
@@ -19,12 +18,11 @@ impl Index {
         wg: &Vec<Array2<f64>>,
         cnts: &Vec<Vec<usize>>,
     ) -> Result<Vec<f64>, CalcError> {
-        zip(wg, cnts)
-            .into_iter()
+        izip!(wg, cnts)
             .map(|(wg, cnts)| self.helper(wg, cnts))
             .collect()
     }
-    fn helper(&self, wg: &Array2<f64>, cnts: &Vec<usize>) -> Result<f64, CalcError> {
+    fn helper(&self, wg: &Array2<f64>, cnts: &[usize]) -> Result<f64, CalcError> {
         let trace_wg = wg.diag().sum();
         let q = cnts.len();
         Ok(trace_wg / q as f64)
