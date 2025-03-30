@@ -7,7 +7,7 @@ mod tests;
 
 use pyo3::prelude::*;
 #[pymodule]
-mod clusterValid {
+mod cluster_valid {
     use super::*;
     use index_tree::{IndexTreeBuilder, IndexTreeReturnValue,IndexTree};
     use numpy::{npyffi::npy_uint64,  PyReadonlyArray2};
@@ -130,9 +130,9 @@ mod clusterValid {
 
     }
 
-    #[pymodule_init]
-    fn init(m: &Bound<'_, PyModule>) -> PyResult<()> {
-        m.add_class::<ClusterValid>()?;
-        Ok(())
-    }
+    // #[pymodule_init]
+    // fn init(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    //     m.add_class::<ClusterValid>()?;
+    //     Ok(())
+    // }
 }
