@@ -3,7 +3,7 @@ use crate::sender::{Sender, Subscriber};
 use ndarray::Array1;
 use std::iter::zip;
 use std::sync::Arc;
-
+use std::cmp::Ordering;
 use super::pairs_and_distances::PairsAndDistancesValue;
 
 #[derive(Clone, Debug)]
@@ -36,48 +36,74 @@ impl Index {
         pairs_in_the_same_cluster: &Array1<i8>,
         distances: &Array1<f64>,
     ) -> Result<(isize, isize, isize), CalcError> {
-        // let (mut s_plus, mut s_minus, mut ties) = (-42, 35, 0);
-        // let (mut s_plus, mut s_minus, mut ties) = (0, 0, 0);
-        //
         // // finding s_plus which represents the number of times a distance between two points
         // // which belong to the same cluster is strictly smaller than the distance between two points not belonging to the same cluster
         // // and s_minus which represents the number of times distance between two points lying in the same cluster  is strictly greater than a distance between two points not
         // //belonging to the same cluster
         //
-        // for (i, (d1, b1)) in zip(distances, pairs_in_the_same_cluster).enumerate() {
-        //     for (j, (d2, b2)) in zip(distances, pairs_in_the_same_cluster).enumerate() {
-        //         if (*b1 == 1 && *b2 == 0) {
-        //             if d1 < d2 {
-        //                 s_plus += 1;
-        //             }
-        //             if d1 > d2 {
-        //                 s_minus += 1;
-        //             }
-        //             if d1 == d2 {
-        //                 ties += 1;
+        // let (mut s_plus, mut s_minus, mut ties) = (0, 0, 0);
+        //
+        // for (&d1, &b1) in distances.iter().zip(pairs_in_the_same_cluster) {
+        //     if b1 == 1 {
+        //         for (&d2, &b2) in distances.iter().zip(pairs_in_the_same_cluster) {
+        //             if b2 == 0 {
+        //                 if d1 < d2 {
+        //                     s_plus += 1;
+        //                 } else if d1 > d2 {
+        //                     s_minus += 1;
+        //                 } else {
+        //                     ties += 1;
+        //                 }
         //             }
         //         }
         //     }
         // }
+        //
         // Ok((s_plus, s_minus, ties))
-let (mut s_plus, mut s_minus, mut ties) = (0, 0, 0);
+let mut s_plus = 0;
+    let mut s_minus = 0;
+    let mut ties = 0;
 
-    for (&d1, &b1) in distances.iter().zip(pairs_in_the_same_cluster) {
-        if b1 == 1 {
-            for (&d2, &b2) in distances.iter().zip(pairs_in_the_same_cluster) {
-                if b2 == 0 {
-                    if d1 < d2 {
-                        s_plus += 1;
-                    } else if d1 > d2 {
-                        s_minus += 1;
-                    } else {
-                        ties += 1;
-                    }
-                }
+    // Collect and sort distances
+    let mut cluster_distances: Vec<f64> = distances
+        .iter()
+        .zip(pairs_in_the_same_cluster.iter())
+        .filter_map(|(&dist, &label)| if label == 1 { Some(dist) } else { None })
+        .collect();
+    
+    let mut non_cluster_distances: Vec<f64> = distances
+        .iter()
+        .zip(pairs_in_the_same_cluster.iter())
+        .filter_map(|(&dist, &label)| if label == 0 { Some(dist) } else { None })
+        .collect();
+    
+    cluster_distances.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
+    non_cluster_distances.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
+
+    // Two-pointer approach for efficient comparison
+    let (mut i, mut j) = (0, 0);
+    let m = cluster_distances.len();
+    let n = non_cluster_distances.len();
+
+    while i < m && j < n {
+        match cluster_distances[i].partial_cmp(&non_cluster_distances[j]) {
+            Some(Ordering::Less) => {
+                s_plus += (n - j) as isize; // All remaining elements in non_cluster_distances are greater
+                i += 1;
             }
+            Some(Ordering::Greater) => {
+                s_minus += (m - i) as isize; // All remaining elements in cluster_distances are greater
+                j += 1;
+            }
+            Some(Ordering::Equal) => {
+                ties += 1;
+                i += 1;
+                j += 1;
+            }
+            None => return Err("Comparison failed due to NaN values".to_string().into()),
         }
     }
-    
+
     Ok((s_plus, s_minus, ties))
     }
 }
