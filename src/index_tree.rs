@@ -160,7 +160,7 @@ impl IndexTreeReturnValue {
     }
     #[getter]
     fn get_tau(&self) -> Result<Option<Vec<f64>>, CalcError> {
-        self.friedman.clone().map(|f| f.map(|v| (*v.val).clone())).transpose()
+        self.tau.clone().map(|f| f.map(|v| (*v.val).clone())).transpose()
     }
     #[getter]
     fn get_gamma(&self) -> Result<Option<Vec<f64>>, CalcError> {
