@@ -21,11 +21,10 @@ impl Index {
     ) -> Result<Vec<f64>, CalcError> {
 let mut retval = vec![f64::NAN;counts.len()];
         for i in 0..counts.len()-2{
-            // let val = self.helper(&counts[i], &wg[i], &wg[i+1])?;
             let diff = self.helper(&wg[i+1], &counts[i], &wg[i])?;
             let diff_plus_one = self.helper(&wg[i+2], &counts[i+1], &wg[i+1])?;
             let val = (diff/diff_plus_one).abs();
-            retval[i]=val;
+            retval[i+1]=val;
         }
         Ok(retval)
 
