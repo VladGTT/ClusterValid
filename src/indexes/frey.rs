@@ -16,26 +16,18 @@ impl Index {
     fn compute(
         &self,
         pairs_in_the_same_cluster: &Vec<Array1<i8>>,
-        distances: &Vec<Array1<f64>>,
+        distances: &[Array1<f64>],
     ) -> Result<Vec<f64>, CalcError> {
-        izip!(
-            pairs_in_the_same_cluster,
-            pairs_in_the_same_cluster[1..].iter(),
-            distances,
-            distances[1..].iter(),
-        )
-        .map(|(p, p_next, d, d_next)| {
-            let (sb, sw) = self.helper(p, d)?;
-            let (sb_next, sw_next) = self.helper(p_next, d_next)?;
+        let mut retval = vec![f64::NAN;pairs_in_the_same_cluster.len()];
+        for i in 0..pairs_in_the_same_cluster.len()-1{
 
-            let val = (sb - sb_next) / (sw - sw_next);
-            Ok(val)
-        })
-        .collect()
+            let (sb, sw) = self.helper(&pairs_in_the_same_cluster[i], &distances[i])?;
+            let (sb_plus_one, sw_plus_one) = self.helper(&pairs_in_the_same_cluster[i+1], &distances[i+1])?;
+            let val = (sb_plus_one-sb)/(sw_plus_one-sw);
+            retval[i]=val;
+        }
+        Ok(retval)
 
-        // zip(pairs_in_the_same_cluster, distances)
-        //     .map(|(p, d)| self.helper(p, d))
-        //     .collect()
     }
     fn helper(&self, p: &Array1<i8>, d: &Array1<f64>) -> Result<(f64, f64), CalcError> {
         let nw = p.iter().filter(|i| **i == 1).count() as f64;

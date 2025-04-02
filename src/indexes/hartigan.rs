@@ -1,10 +1,9 @@
 use crate::calc_error::{CalcError, CombineErrors};
-use ndarray::Array2;
+use ndarray::{ Array2};
 
 use crate::sender::{Sender, Subscriber};
 
 use super::helpers::{counts::CountsValue, within_group_dispercion::WGDValue};
-use itertools::izip;
 use std::sync::Arc;
 #[derive(Clone, Debug)]
 pub struct HartiganIndexValue {
@@ -17,18 +16,22 @@ impl Index {
     pub fn compute(
         &self,
         counts: &Vec<Vec<usize>>,
-        wg: &Vec<Array2<f64>>,
+        wg: &[Array2<f64>],
     ) -> Result<Vec<f64>, CalcError> {
-        izip!(counts, wg[0..].iter(), wg[1..].iter())
-            .map(|(counts, w, w_next)| {
-                let tracewg_next = w_next.diag().sum();
+        let mut retval = vec![f64::NAN;counts.len()];
+        for i in 0..counts.len()-1{
+            let val = Self::helper(&counts[i], &wg[i], &wg[i+1])?;
+            retval[i]=val;
+        }
+        Ok(retval)
+    }
+    fn helper(counts:&[usize], w: &Array2<f64>, w_plus_one: &Array2<f64>)->Result<f64,CalcError>{
+                let tracewg_plus_one = w_plus_one.diag().sum();
                 let tracewg = w.diag().sum();
                 let n = counts.iter().sum::<usize>() as f64;
                 let q = counts.len() as f64;
-                let val = (tracewg_next / tracewg - 1.) * (n - q + 1.);
+                let val = (tracewg / tracewg_plus_one - 1.) * (n - q - 1.);
                 Ok(val)
-            })
-            .collect()
     }
 }
 

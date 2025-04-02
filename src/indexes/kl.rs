@@ -17,30 +17,32 @@ impl Index {
     pub fn compute(
         &self,
         counts: &Vec<Vec<usize>>,
-        wg: &Vec<Array2<f64>>,
+        wg: &[Array2<f64>],
     ) -> Result<Vec<f64>, CalcError> {
-        izip!(counts, counts[1..].iter(),counts[2..].iter(), wg, wg[1..].iter(), wg[2..].iter())
-            .map(|(counts, counts_next,counts_next_next, wg, wg_next,wg_next_next)| {
-                let diff = self.helper(counts_next_next, wg_next_next, counts_next, wg_next)?;
-                let diff_plus_one = self.helper(counts_next, wg_next, counts, wg)?;
-                Ok((diff/diff_plus_one).abs())
-            })
-            .collect::<Result<Vec<f64>, CalcError>>()
+let mut retval = vec![f64::NAN;counts.len()];
+        for i in 0..counts.len()-2{
+            // let val = self.helper(&counts[i], &wg[i], &wg[i+1])?;
+            let diff = self.helper(&wg[i+1], &counts[i], &wg[i])?;
+            let diff_plus_one = self.helper(&wg[i+2], &counts[i+1], &wg[i+1])?;
+            let val = (diff/diff_plus_one).abs();
+            retval[i]=val;
+        }
+        Ok(retval)
+
     }
     fn helper(
         &self,
-        counts_next: &Vec<usize>,
-        wg_next: &Array2<f64>,
+        wg_plus_one: &Array2<f64>,
         counts: &Vec<usize>,
         wg: &Array2<f64>,
     ) -> Result<f64, CalcError> {
-        let q_next = counts_next.len() as f64;
         let q = counts.len() as f64;
+        let q_plus_one = q + 1.;
         let p = wg.ncols() as f64;
-        let trace_wg_next = wg_next.diag().sum();
+        let trace_wg_plus_one = wg_plus_one.diag().sum();
         let trace_wg = wg.diag().sum();
 
-        let val = q_next.powf(2. / p) * trace_wg_next - q.powf(2. / p) * trace_wg;
+        let val = q.powf(2. / p) * trace_wg - q_plus_one.powf(2. / p) * trace_wg_plus_one;
         Ok(val)
     }
 }
