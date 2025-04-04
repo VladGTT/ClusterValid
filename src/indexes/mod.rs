@@ -29,6 +29,9 @@ pub mod frey; //tested
 pub mod hartigan; //tested
 pub mod kl; //tested
 //
+pub mod pbm;
+pub mod sf;
+//
 // pub mod beale;
 // pub mod duda;
 // pub mod pseudot2;

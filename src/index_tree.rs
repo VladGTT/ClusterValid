@@ -30,7 +30,8 @@ use crate::indexes::silhouette::SilhouetteIndexValue;
 use crate::indexes::tau::TauIndexValue;
 use crate::indexes::tracew::TracewIndexValue;
 use crate::indexes::trcovw::TrcovwIndexValue;
-use crate::indexes::xiebeni::{XieBeniIndexValue};
+use crate::indexes::xiebeni::XieBeniIndexValue;
+use crate::indexes::pbm::PBMIndexValue;
 
 use crate::indexes::helpers::between_group_dispercion::BGDValue;
 use crate::indexes::helpers::clusters_centroids::ClustersCentroidsValue;
@@ -73,6 +74,7 @@ use crate::{
         tracew::Node as TracewNode,
         trcovw::Node as TrcovwNode,
         xiebeni::Node as XieBeniNode,
+        pbm::Node as PBMNode,
     },
     sender::{Sender, Subscriber},
 };
@@ -110,6 +112,7 @@ pub struct IndexTreeReturnValue {
     pub frey: Option<Result<FreyIndexValue, CalcError>>,
     pub kl: Option<Result<KLIndexValue, CalcError>>,
     pub xiebeni: Option<Result<XieBeniIndexValue, CalcError>>,
+    pub pbm: Option<Result<PBMIndexValue, CalcError>>,
 }
 
 #[pymethods]
@@ -232,6 +235,10 @@ impl IndexTreeReturnValue {
     #[getter]
     fn get_hartigan(&self) -> Result<Option<Vec<f64>>, CalcError> {
         self.hartigan.clone().map(|f| f.map(|v| (*v.val).clone())).transpose()
+    }
+    #[getter]
+    fn get_pbm(&self) -> Result<Option<Vec<f64>>, CalcError> {
+        self.pbm.clone().map(|f| f.map(|v| (*v.val).clone())).transpose()
     }
 }
 
@@ -376,6 +383,11 @@ impl Subscriber<XieBeniIndexValue> for IndexTreeReturnValue {
         self.xiebeni = Some(data);
     }
 }
+impl Subscriber<PBMIndexValue> for IndexTreeReturnValue {
+    fn recieve_data(&mut self, data: Result<PBMIndexValue, CalcError>) {
+        self.pbm = Some(data);
+    }
+}
 pub struct IndexTree<'a> {
     raw_data: RawDataNode<'a>,
     retval: Arc<Mutex<IndexTreeReturnValue>>,
@@ -513,6 +525,16 @@ impl<'a> IndexTreeBuilder<'a> {
         self.td_sender.add_subscriber(scott.clone());
 
         self.counts_sender.add_subscriber(scott);
+        self
+    }
+    pub fn add_pbm(mut self) -> Self {
+        let pbm = Arc::new(Mutex::new(PBMNode::new(Sender::new(vec![self
+            .retval
+            .clone()]))));
+        self.wg_sender.add_subscriber(pbm.clone());
+        self.td_sender.add_subscriber(pbm.clone());
+
+        self.clusters_centroids_sender.add_subscriber(pbm);
         self
     }
     pub fn add_friedman(mut self) -> Self {

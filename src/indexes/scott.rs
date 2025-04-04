@@ -7,7 +7,6 @@ use std::sync::Arc;
 
 use super::helpers::{
     counts::CountsValue, total_dispercion::TDValue, wgs::WGSValue,
-    within_group_dispercion::WGDValue,
 };
 
 #[derive(Clone, Debug)]
@@ -42,11 +41,7 @@ impl Index {
             })
             .collect::<Result<Vec<f64>, CalcError>>()?;
         let val = vec.iter().sum();
-        // let n = counts.iter().sum::<usize>() as f64;
-        // let det_t = td.det().map_err(|e| CalcError::from(format!("{e:?}")))?;
-        // let det_wg = wg.det().map_err(|e| CalcError::from(format!("{e:?}")))?;
-        // let val = (det_t / det_wg).ln();
-        // let val = val * n;
+
         Ok(val)
     }
 }

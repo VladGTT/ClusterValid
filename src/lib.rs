@@ -11,8 +11,8 @@ mod cluster_valid {
     use std::collections::HashSet;
 
     use super::*;
-    use index_tree::{IndexTreeBuilder, IndexTreeReturnValue,IndexTree};
-    use numpy::{npyffi::{npy_int32, npy_uint, npy_uint32, npy_uint64},  PyReadonlyArray2};
+    use index_tree::{IndexTreeBuilder, IndexTreeReturnValue};
+    use numpy::{npyffi::npy_uint32,  PyReadonlyArray2};
 
 #[pyclass]
 struct ClusterValid {
@@ -44,6 +44,7 @@ struct ClusterValid {
     frey: bool,
     kl: bool,
     xiebeni: bool,
+    pbm: bool
 }
 
 #[pymethods]
@@ -80,6 +81,7 @@ impl ClusterValid {
             frey: index_set.contains("Frey"),
             kl: index_set.contains("KL"),
             xiebeni: index_set.contains("Xie-Beni"),
+            pbm: index_set.contains("PBM"),
         }
     }
 
@@ -120,6 +122,7 @@ impl ClusterValid {
         if self.frey { builder = builder.add_frey(); }
         if self.kl { builder = builder.add_kl(); }
         if self.xiebeni { builder = builder.add_xiebeni(); }
+        if self.pbm { builder = builder.add_pbm(); }
 
         builder.finish().compute((x, y).into())
     }
