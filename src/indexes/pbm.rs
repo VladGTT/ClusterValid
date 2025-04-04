@@ -32,8 +32,8 @@ impl Index {
         centroids: &Array2<f64>,
     ) -> Result<f64, CalcError> {
         let q = centroids.nrows();
-        let tss = td.diag().sum();
-        let wgss = wg.diag().sum();
+        let tss = td.diag().sqrt().sum();
+        let wgss = wg.diag().sqrt().sum();
 
         let mut max = f64::MIN;
         for (i,center1) in centroids.rows().into_iter().enumerate(){
