@@ -531,7 +531,7 @@ impl<'a> IndexTreeBuilder<'a> {
         let pbm = Arc::new(Mutex::new(PBMNode::new(Sender::new(vec![self
             .retval
             .clone()]))));
-        self.wg_sender.add_subscriber(pbm.clone());
+        self.wgs_sender.add_subscriber(pbm.clone());
         self.td_sender.add_subscriber(pbm.clone());
 
         self.clusters_centroids_sender.add_subscriber(pbm);
