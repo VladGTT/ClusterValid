@@ -54,7 +54,7 @@ impl Index {
         }
         let sum2 = dists.iter().sum::<f64>();
         let temp: f64 = sum1/(n*q)-sum2;
-        let val = 1.-1./temp.exp().exp();
+        let val = 1.-1./temp.exp();
         Ok(val)
 
     }
