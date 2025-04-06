@@ -668,7 +668,7 @@ impl<'a> IndexTreeBuilder<'a> {
             .clone()]))));
 
         self.wg_sender.add_subscriber(xiebeni.clone());
-        self.pairs_and_distances_sender.add_subscriber(xiebeni.clone());
+        self.clusters_centroids_sender.add_subscriber(xiebeni.clone());
 
         self.counts_sender.add_subscriber(xiebeni);
         self
