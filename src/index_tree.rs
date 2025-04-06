@@ -32,6 +32,7 @@ use crate::indexes::tracew::TracewIndexValue;
 use crate::indexes::trcovw::TrcovwIndexValue;
 use crate::indexes::xiebeni::XieBeniIndexValue;
 use crate::indexes::pbm::PBMIndexValue;
+use crate::indexes::sf::SFIndexValue;
 
 use crate::indexes::helpers::between_group_dispercion::BGDValue;
 use crate::indexes::helpers::clusters_centroids::ClustersCentroidsValue;
@@ -75,6 +76,7 @@ use crate::{
         trcovw::Node as TrcovwNode,
         xiebeni::Node as XieBeniNode,
         pbm::Node as PBMNode,
+        sf::Node as SFNode,
     },
     sender::{Sender, Subscriber},
 };
@@ -113,6 +115,7 @@ pub struct IndexTreeReturnValue {
     pub kl: Option<Result<KLIndexValue, CalcError>>,
     pub xiebeni: Option<Result<XieBeniIndexValue, CalcError>>,
     pub pbm: Option<Result<PBMIndexValue, CalcError>>,
+    pub sf: Option<Result<SFIndexValue, CalcError>>,
 }
 
 #[pymethods]
@@ -239,6 +242,10 @@ impl IndexTreeReturnValue {
     #[getter]
     fn get_pbm(&self) -> Result<Option<Vec<f64>>, CalcError> {
         self.pbm.clone().map(|f| f.map(|v| (*v.val).clone())).transpose()
+    }
+    #[getter]
+    fn get_sf(&self) -> Result<Option<Vec<f64>>, CalcError> {
+        self.sf.clone().map(|f| f.map(|v| (*v.val).clone())).transpose()
     }
 }
 
@@ -388,6 +395,11 @@ impl Subscriber<PBMIndexValue> for IndexTreeReturnValue {
         self.pbm = Some(data);
     }
 }
+impl Subscriber<SFIndexValue> for IndexTreeReturnValue {
+    fn recieve_data(&mut self, data: Result<SFIndexValue, CalcError>) {
+        self.sf = Some(data);
+    }
+}
 pub struct IndexTree<'a> {
     raw_data: RawDataNode<'a>,
     retval: Arc<Mutex<IndexTreeReturnValue>>,
@@ -535,6 +547,16 @@ impl<'a> IndexTreeBuilder<'a> {
 
         self.counts_sender.add_subscriber(pbm.clone());
         self.clusters_centroids_sender.add_subscriber(pbm);
+        self
+    }
+    pub fn add_sf(mut self) -> Self {
+        let sf = Arc::new(Mutex::new(SFNode::new(Sender::new(vec![self
+            .retval
+            .clone()]))));
+        self.raw_data_sender.add_subscriber(sf.clone());
+
+        self.counts_sender.add_subscriber(sf.clone());
+        self.clusters_centroids_sender.add_subscriber(sf);
         self
     }
     pub fn add_friedman(mut self) -> Self {

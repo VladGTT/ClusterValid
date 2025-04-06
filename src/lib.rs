@@ -44,7 +44,8 @@ struct ClusterValid {
     frey: bool,
     kl: bool,
     xiebeni: bool,
-    pbm: bool
+    pbm: bool,
+    sf: bool
 }
 
 #[pymethods]
@@ -82,6 +83,8 @@ impl ClusterValid {
             kl: index_set.contains("KL"),
             xiebeni: index_set.contains("Xie-Beni"),
             pbm: index_set.contains("PBM"),
+            sf: index_set.contains("SF"),
+
         }
     }
 
@@ -123,6 +126,7 @@ impl ClusterValid {
         if self.kl { builder = builder.add_kl(); }
         if self.xiebeni { builder = builder.add_xiebeni(); }
         if self.pbm { builder = builder.add_pbm(); }
+        if self.sf { builder = builder.add_sf(); }
 
         builder.finish().compute((x, y).into())
     }
