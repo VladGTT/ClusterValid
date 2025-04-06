@@ -1,9 +1,8 @@
 use std::iter::zip;
-
 use super::helpers::pairs_and_distances::PairsAndDistancesValue;
 use crate::calc_error::CalcError;
 use crate::sender::{Sender, Subscriber};
-use ndarray::{Array1, ArrayView1};
+use ndarray::Array1;
 use std::sync::Arc;
 
 #[derive(Clone, Debug)]
@@ -45,9 +44,10 @@ impl Index {
             .filter(|(p, _)| **p == 0)
             .map(|(_, d)| *d)
             .sum::<f64>();
-        // let std_d = distances.std(0.);
+
+        let std_d = distances.std(0.);
         // let val = ((sb / nb - sw / nw) * (nw * nb / (nt * nt)).sqrt()) / std_d;
-        let val = ((sw / nw - sb / nb) * (nw * nb).sqrt()) / nt;
+        let val = ((sw / nw - sb / nb) * (nw * nb).sqrt()) / nt / std_d;
         Ok(val)
     }
 }

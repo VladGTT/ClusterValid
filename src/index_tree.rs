@@ -229,7 +229,7 @@ impl IndexTreeReturnValue {
         self.kl.clone().map(|f| f.map(|v| (*v.val).clone())).transpose()
     }    
     #[getter]
-    fn get_xiebeni(&self) -> Result<Option<Vec<f64>>, CalcError> {
+    fn get_xie_beni(&self) -> Result<Option<Vec<f64>>, CalcError> {
         self.xiebeni.clone().map(|f| f.map(|v| (*v.val).clone())).transpose()
     }
     #[getter]
