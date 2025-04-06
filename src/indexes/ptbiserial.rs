@@ -46,8 +46,7 @@ impl Index {
             .sum::<f64>();
 
         let std_d = distances.std(0.);
-        // let val = ((sb / nb - sw / nw) * (nw * nb / (nt * nt)).sqrt()) / std_d;
-        let val = ((sw / nw - sb / nb) * (nw * nb).sqrt()) / nt / std_d;
+        let val = ((sb / nb - sw / nw) * (nw * nb).sqrt()) / nt / std_d;
         Ok(val)
     }
 }

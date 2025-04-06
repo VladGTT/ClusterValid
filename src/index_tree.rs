@@ -146,7 +146,7 @@ impl IndexTreeReturnValue {
         self.silhouette
             .clone().map(|f| f.map(|v| (*v.val).clone())).transpose()}
     #[getter]
-    fn get_rubin(&self) -> Result<Option<Vec<f64>>, CalcError> {
+    fn get_friedman1(&self) -> Result<Option<Vec<f64>>, CalcError> {
         self.rubin    
             .clone().map(|f| f.map(|v| (*v.val).clone())).transpose()}
     #[getter]
@@ -154,11 +154,11 @@ impl IndexTreeReturnValue {
         self.mariott.clone().map(|f| f.map(|v| (*v.val).clone())).transpose()
     }
     #[getter]
-    fn get_scott(&self) -> Result<Option<Vec<f64>>, CalcError> {
+    fn get_scott2(&self) -> Result<Option<Vec<f64>>, CalcError> {
         self.scott.clone().map(|f| f.map(|v| (*v.val).clone())).transpose()
     }
     #[getter]
-    fn get_friedman(&self) -> Result<Option<Vec<f64>>, CalcError> {
+    fn get_friedman2(&self) -> Result<Option<Vec<f64>>, CalcError> {
         self.friedman.clone().map(|f| f.map(|v| (*v.val).clone())).transpose()
     }
     #[getter]
