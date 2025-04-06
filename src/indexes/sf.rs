@@ -44,7 +44,7 @@ impl Index {
         for (nk,c) in izip!(counts,centroids.rows()){
             sum1+=(*nk as f64)*(&centroids_mean-&c).pow2().sum().sqrt();
         }
-        let mut dists: Vec<f64> = Vec::with_capacity(counts.capacity());
+        let mut dists: Vec<f64> = vec![0.;q as usize];
         for (x_row,y_row) in izip!(x.rows(),y){
             let dist = (&centroids.row(*y_row as usize)-&x_row).pow2().sum().sqrt();
             dists[*y_row as usize]+=dist;
