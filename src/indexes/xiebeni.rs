@@ -39,7 +39,7 @@ impl Index {
             .map(|(_, d)| *d)
             .min_by(|a, b| a.total_cmp(b))
             .ok_or("Can't find min intercluster distance")?;
-        let val = wg.diag().sum()/min_intercluster.powi(2)/n;
+        let val = wg.diag().sqrt().sum()/min_intercluster.powi(2)/n;
         Ok(val)
     }
 }
