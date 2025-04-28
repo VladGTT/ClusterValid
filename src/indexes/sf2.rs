@@ -39,7 +39,7 @@ impl Index {
     ) -> Result<f64, CalcError> {
         let n = counts.iter().sum::<usize>() as f64;
         let q = counts.len() as f64;
-        let centroids_mean = centroids.mean_axis(Axis(0)).ok_or("Cant find mean")?;
+        let centroids_mean = x.mean_axis(Axis(0)).ok_or("Cant find mean")?;
         let mut sum1 = 0.;
         for (nk,c) in izip!(counts,centroids.rows()){
             sum1+=(*nk as f64)*(&centroids_mean-&c).pow2().sum().sqrt();
