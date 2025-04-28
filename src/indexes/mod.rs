@@ -31,6 +31,8 @@ pub mod kl; //tested
 //
 pub mod pbm;
 pub mod sf;
+pub mod sf2;
+pub mod sf3;
 //
 // pub mod beale;
 // pub mod duda;

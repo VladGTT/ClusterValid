@@ -33,6 +33,8 @@ use crate::indexes::trcovw::TrcovwIndexValue;
 use crate::indexes::xiebeni::XieBeniIndexValue;
 use crate::indexes::pbm::PBMIndexValue;
 use crate::indexes::sf::SFIndexValue;
+use crate::indexes::sf2::SF2IndexValue;
+use crate::indexes::sf3::SF3IndexValue;
 
 use crate::indexes::helpers::between_group_dispercion::BGDValue;
 use crate::indexes::helpers::clusters_centroids::ClustersCentroidsValue;
@@ -77,6 +79,8 @@ use crate::{
         xiebeni::Node as XieBeniNode,
         pbm::Node as PBMNode,
         sf::Node as SFNode,
+        sf2::Node as SF2Node,
+        sf3::Node as SF3Node,
     },
     sender::{Sender, Subscriber},
 };
@@ -116,6 +120,8 @@ pub struct IndexTreeReturnValue {
     pub xiebeni: Option<Result<XieBeniIndexValue, CalcError>>,
     pub pbm: Option<Result<PBMIndexValue, CalcError>>,
     pub sf: Option<Result<SFIndexValue, CalcError>>,
+    pub sf2: Option<Result<SF2IndexValue, CalcError>>,
+    pub sf3: Option<Result<SF3IndexValue, CalcError>>,
 }
 
 #[pymethods]
@@ -246,6 +252,14 @@ impl IndexTreeReturnValue {
     #[getter]
     fn get_sf(&self) -> Result<Option<Vec<f64>>, CalcError> {
         self.sf.clone().map(|f| f.map(|v| (*v.val).clone())).transpose()
+    }
+    #[getter]
+    fn get_sf2(&self) -> Result<Option<Vec<f64>>, CalcError> {
+        self.sf2.clone().map(|f| f.map(|v| (*v.val).clone())).transpose()
+    }
+    #[getter]
+    fn get_sf3(&self) -> Result<Option<Vec<f64>>, CalcError> {
+        self.sf3.clone().map(|f| f.map(|v| (*v.val).clone())).transpose()
     }
 }
 
@@ -400,6 +414,16 @@ impl Subscriber<SFIndexValue> for IndexTreeReturnValue {
         self.sf = Some(data);
     }
 }
+impl Subscriber<SF2IndexValue> for IndexTreeReturnValue {
+    fn recieve_data(&mut self, data: Result<SF2IndexValue, CalcError>) {
+        self.sf2 = Some(data);
+    }
+}
+impl Subscriber<SF3IndexValue> for IndexTreeReturnValue {
+    fn recieve_data(&mut self, data: Result<SF3IndexValue, CalcError>) {
+        self.sf3 = Some(data);
+    }
+}
 pub struct IndexTree<'a> {
     raw_data: RawDataNode<'a>,
     retval: Arc<Mutex<IndexTreeReturnValue>>,
@@ -551,6 +575,26 @@ impl<'a> IndexTreeBuilder<'a> {
     }
     pub fn add_sf(mut self) -> Self {
         let sf = Arc::new(Mutex::new(SFNode::new(Sender::new(vec![self
+            .retval
+            .clone()]))));
+        self.raw_data_sender.add_subscriber(sf.clone());
+
+        self.counts_sender.add_subscriber(sf.clone());
+        self.clusters_centroids_sender.add_subscriber(sf);
+        self
+    }
+    pub fn add_sf2(mut self) -> Self {
+        let sf = Arc::new(Mutex::new(SF2Node::new(Sender::new(vec![self
+            .retval
+            .clone()]))));
+        self.raw_data_sender.add_subscriber(sf.clone());
+
+        self.counts_sender.add_subscriber(sf.clone());
+        self.clusters_centroids_sender.add_subscriber(sf);
+        self
+    }
+    pub fn add_sf3(mut self) -> Self {
+        let sf = Arc::new(Mutex::new(SF3Node::new(Sender::new(vec![self
             .retval
             .clone()]))));
         self.raw_data_sender.add_subscriber(sf.clone());
