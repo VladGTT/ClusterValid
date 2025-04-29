@@ -206,7 +206,7 @@ impl IndexTreeReturnValue {
         self.trcovw.clone().map(|f| f.map(|v| (*v.val).clone())).transpose()
     }
     #[getter]
-    fn get_hubertw(&self) -> Result<Option<Vec<f64>>, CalcError> {
+    fn get_hubert(&self) -> Result<Option<Vec<f64>>, CalcError> {
         self.hubert.clone().map(|f| f.map(|v| (*v.val).clone())).transpose()
     }
     #[getter]
