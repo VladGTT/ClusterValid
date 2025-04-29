@@ -46,13 +46,13 @@ impl Index {
         }
         let mut dists: Vec<f64> = vec![0.;q as usize];
         for (x_row,y_row) in izip!(x.rows(),y){
-            let dist = (&centroids.row(*y_row as usize)-&x_row).pow2().sum().sqrt();
+            let dist = (&centroids.row(*y_row as usize)-&x_row).pow2().sum();
             dists[*y_row as usize]+=dist;
         } 
         for (d,c) in izip!(dists.iter_mut(),counts){
             *d /=*c as f64;
         }
-        let sum2 = dists.iter().sum::<f64>();
+        let sum2 = dists.iter().map(|v|v.sqrt()).sum::<f64>();
         let temp: f64 = sum1/(n*q)-sum2/q;
         let val = 1.-1./temp.exp().exp();
         Ok(val)
