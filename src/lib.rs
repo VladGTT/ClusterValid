@@ -56,7 +56,7 @@ impl ClusterValid {
     fn new(indexes: Vec<String>) -> Self {
         let index_set: HashSet<String> = indexes.into_iter().collect();
         Self {
-            ball_hall: index_set.contains("ball-hall"),
+            ball_hall: index_set.contains("ball_hall"),
             davies_bouldin: index_set.contains("davies_bouldin"),
             silhouette: index_set.contains("silhouette"),
             c_index: index_set.contains("c_index"),
