@@ -250,15 +250,15 @@ impl IndexTreeReturnValue {
         self.pbm.clone().map(|f| f.map(|v| (*v.val).clone())).transpose()
     }
     #[getter]
-    fn get_sf(&self) -> Result<Option<Vec<f64>>, CalcError> {
+    fn get_sf1(&self) -> Result<Option<Vec<f64>>, CalcError> {
         self.sf.clone().map(|f| f.map(|v| (*v.val).clone())).transpose()
     }
     #[getter]
-    fn get_sf2(&self) -> Result<Option<Vec<f64>>, CalcError> {
+    fn get_sf1c(&self) -> Result<Option<Vec<f64>>, CalcError> {
         self.sf2.clone().map(|f| f.map(|v| (*v.val).clone())).transpose()
     }
     #[getter]
-    fn get_sf3(&self) -> Result<Option<Vec<f64>>, CalcError> {
+    fn get_sf2(&self) -> Result<Option<Vec<f64>>, CalcError> {
         self.sf3.clone().map(|f| f.map(|v| (*v.val).clone())).transpose()
     }
 }

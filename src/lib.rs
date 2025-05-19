@@ -85,9 +85,9 @@ impl ClusterValid {
             kl: index_set.contains("kl"),
             xiebeni: index_set.contains("xie_beni"),
             pbm: index_set.contains("pbm"),
-            sf: index_set.contains("sf"),
-            sf2: index_set.contains("sf2"),
-            sf3: index_set.contains("sf3"),
+            sf: index_set.contains("sf1"),
+            sf2: index_set.contains("sf1c"),
+            sf3: index_set.contains("sf2"),
 
         }
     }
