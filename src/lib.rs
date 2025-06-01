@@ -7,7 +7,7 @@ mod tests;
 
 use pyo3::prelude::*;
 #[pymodule]
-mod cluster_valid {
+mod ClusterValid {
     use std::collections::HashSet;
 
     use super::*;
@@ -15,7 +15,7 @@ mod cluster_valid {
     use numpy::{npyffi::npy_uint32,  PyReadonlyArray2};
 
 #[pyclass]
-struct ClusterValid {
+struct ClusterIndexCalculator {
     ball_hall: bool,
     davies_bouldin: bool,
     silhouette: bool,
@@ -51,7 +51,7 @@ struct ClusterValid {
 }
 
 #[pymethods]
-impl ClusterValid {
+impl ClusterIndexCalculator {
     #[new]
     fn new(indexes: Vec<String>) -> Self {
         let index_set: HashSet<String> = indexes.into_iter().collect();
