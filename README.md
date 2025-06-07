@@ -128,7 +128,7 @@ ClusterValid is a Python library for internal clustering validation, designed to
 
 <!-- GETTING STARTED -->
 ## Getting Started
-The following method describes installation through compiling on local machine. For installation of precompiled binaries follow section.
+The following method describes installation through compiling on local machine. For installation of precompiled binaries follow section <a href="#installation of precompiled binaries">Installation of precompiled binaries</a>.
 ### Prerequisites
 
 This is an example of how to list things you need to use the software and how to install them.
