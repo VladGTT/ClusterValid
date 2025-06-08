@@ -120,7 +120,6 @@ ClusterValid is a Python library for internal clustering validation, designed to
 | SD_Dis | sd_dis | Halkidi, M., Vazirgiannis, M., & Batistakis, Y. (2000). Quality scheme assessment in the clustering process. In *D. A. Zighed, J. Komorowski, & J. Żytkow (Eds.), Principles of data mining and knowledge discovery* (pp. 265–276). Springer Berlin Heidelberg. https://doi.org/10.1007/3-540-45372-5_26 | 
 | SD_Scat | sd_scat | Halkidi, M., Vazirgiannis, M., & Batistakis, Y. (2000). Quality scheme assessment in the clustering process. In *D. A. Zighed, J. Komorowski, & J. Żytkow (Eds.), Principles of data mining and knowledge discovery* (pp. 265–276). Springer Berlin Heidelberg. https://doi.org/10.1007/3-540-45372-5_26 | 
 | SF1 | sf1 | Saitta, S., Raphael, B., & Smith, I. F. C. (2007). A bounded index for cluster validity. In *P. Perner (Ed.), Machine learning and data mining in pattern recognition* (pp. 174–187). Springer Berlin Heidelberg. https://doi.org/10.1007/978-3-540-73499-4_14 | 
-| SF1c | sf1c | Our modification of SF1 | 
 | SF2 | sf2 | Saitta, S., Raphael, B., & Smith, I. F. C. (2008). A comprehensive validity index for clustering. *Intelligent Data Analysis*, 12(6), 529–548. https://doi.org/10.5555/1497136.1497138 | 
 | Silhouette | silhouette | Rousseeuw, P. J. (1987). Silhouettes: A graphical aid to the interpretation and validation of cluster analysis. *Journal of Computational and Applied Mathematics*, 20, 53–65. https://doi.org/10.1016/0377-0427(87)90125-7 | 
 | Tau | tau | Rohlf, F. J. (1974). Methods of comparing classifications. *Annual Review of Ecology, Evolution, and Systematics*, 5, 101–113. https://doi.org/10.1146/annurev.es.05.110174.000533;<br>Milligan, G. W. (1981). A Monte Carlo study of thirty internal criterion measures for cluster analysis. *Psychometrika*, 46 (2), 187-199. https://doi.org/10.1007/BF02293899 | 
@@ -172,7 +171,7 @@ Before installing and using the library, make sure the following software is ins
       ```sh
       pip install /path/to/your/file.whl
       ```
-  /path/to/your/file.whl is the path to the .whl file that was extracted.
+     /path/to/your/file.whl is the path to the .whl file that was extracted.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
