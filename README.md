@@ -215,7 +215,6 @@ indexes = [
     "xie_beni",
     "pbm",
     "sf1",
-    "sf1c",
     "sf2",
 ]
 # Convert data to 64-bit floating point
@@ -256,7 +255,6 @@ print(f"CCC: {val.ccc}")
 print(f"Xie-Beni: {val.xie_beni}")
 print(f"PBM: {val.pbm}")
 print(f"SF1: {val.sf1}")
-print(f"SF1c: {val.sf1c}")
 print(f"SF2: {val.sf2}")
 print(f"Dindex: {val.dindex}")
 
