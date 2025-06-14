@@ -5,9 +5,10 @@ use ndarray_linalg::Determinant;
 use crate::sender::{Sender, Subscriber};
 
 use super::helpers::{counts::CountsValue, within_group_dispercion::WGDValue};
-use std::{iter::zip, sync::Arc};
+use rand::distr::{Distribution, Uniform};
+use std::sync::Arc;
 #[derive(Clone, Debug)]
-pub struct MariottIndexValue {
+pub struct GapIndexValue {
     pub val: Arc<Vec<f64>>,
 }
 
@@ -19,16 +20,31 @@ impl Index {
         counts: &Vec<Vec<usize>>,
         wg: &Vec<Array2<f64>>,
     ) -> Result<Vec<f64>, CalcError> {
-        zip(counts, wg)
-            .map(|(cnts, wg)| self.helper(cnts, wg))
-            .collect()
+        Err("Not implermented".into())
     }
     fn helper(&self, counts: &Vec<usize>, wg: &Array2<f64>) -> Result<f64, CalcError> {
-        let q = counts.len();
-        let q2 = (q * q) as f64;
-        let det_wg = wg.det().map_err(|e| CalcError::from(format!("{e:?}")))?;
-        let val = q2 * det_wg;
-        Ok(val)
+        let b = 10;
+        let n = counts.iter().sum();
+        let p = wg.ncols();
+        // min max for every feature
+        // random in range (min max) for columns
+        let uniform_distr = Uniform::new(10., 10000.).map_err(|e| e.to_string())?;
+        let mut rng = rand::rng();
+        for _ in 0..b {
+            let mut data: Array2<f64> = Array2::zeros((n, p));
+            data.iter_mut()
+                .for_each(|v| *v = uniform_distr.sample(&mut rng));
+        }
+        let kmean: KMeans<_, 4, _> =
+            KMeans::new(samples, sample_cnt, sample_dims, EuclideanDistance);
+        let result = kmean.kmeans_lloyd(
+            k,
+            max_iter,
+            KMeans::init_kmeanplusplus,
+            &KMeansConfig::default(),
+        );
+        println!("Cluster-Assignments: {:?}", result.assignments);
+        Err("Not implermented".into())
     }
 }
 
@@ -36,11 +52,11 @@ pub struct Node<'a> {
     index: Index,
     counts: Option<Result<CountsValue, CalcError>>,
     wg: Option<Result<WGDValue, CalcError>>,
-    sender: Sender<'a, MariottIndexValue>,
+    sender: Sender<'a, GapIndexValue>,
 }
 
 impl<'a> Node<'a> {
-    pub fn new(sender: Sender<'a, MariottIndexValue>) -> Self {
+    pub fn new(sender: Sender<'a, GapIndexValue>) -> Self {
         Self {
             index: Index,
             counts: None,
@@ -54,7 +70,7 @@ impl<'a> Node<'a> {
                 Ok((wg, cnts)) => self
                     .index
                     .compute(&cnts.val, &wg.val)
-                    .map(|val| MariottIndexValue { val: Arc::new(val) }),
+                    .map(|val| GapIndexValue { val: Arc::new(val) }),
                 Err(err) => Err(err),
             };
             self.sender.send_to_subscribers(res);

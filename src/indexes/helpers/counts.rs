@@ -3,27 +3,47 @@ use crate::{
     sender::{Sender, Subscriber},
 };
 use itertools::Itertools;
-use ndarray::{ArcArray1, Array1, ArrayView1, ArrayView2};
+use ndarray::ArrayView2;
+use std::sync::Arc;
+
+use super::raw_data::RawDataValue;
+#[derive(Clone, Debug)]
+pub struct CountsValue {
+    pub val: Arc<Vec<Vec<usize>>>,
+}
 #[derive(Default)]
 pub struct Counts;
 impl Counts {
-    pub fn compute(&self, clusters: &ArrayView1<i32>) -> Result<ArcArray1<usize>, CalcError> {
-        let counts = clusters.iter().counts();
-        let vec = counts
+    pub fn compute(&self, clusters: &ArrayView2<u32>) -> Result<Vec<Vec<usize>>, CalcError> {
+        let counts = clusters
+            .columns()
             .into_iter()
-            .sorted_by(|(a, _), (b, _)| a.cmp(b))
-            .map(|(_, v)| v)
-            .collect::<Vec<usize>>();
-        let res = Array1::from_vec(vec);
-        Ok(res.to_shared())
+            .map(|c| {
+                c.iter()
+                    .counts()
+                    .into_iter()
+                    .sorted_by(|(a, _), (b, _)| a.cmp(b))
+                    .map(|(_, v)| v)
+                    .collect::<Vec<usize>>()
+            })
+            .collect::<Vec<Vec<usize>>>();
+        Ok(counts)
+        // let counts = clusters.iter().counts();
+        // let vec = counts
+        //     .into_iter()
+        //     .sorted_by(|(a, _), (b, _)| a.cmp(b))
+        //     .map(|(_, v)| v)
+        //     .collect::<Vec<usize>>();
+        // let res = Array1::from_vec(vec);
+        // Ok(res.to_shared())
     }
 }
 pub struct CountsNode<'a> {
     index: Counts,
-    sender: Sender<'a, ArcArray1<usize>>,
+    sender: Sender<'a, CountsValue>,
 }
 impl<'a> CountsNode<'a> {
-    pub fn new(sender: Sender<'a, ArcArray1<usize>>) -> Self {
+    pub fn new(sender: Sender<'a, CountsValue>) -> Self {
         Self {
             index: Counts,
             sender,
@@ -31,13 +51,13 @@ impl<'a> CountsNode<'a> {
     }
 }
 
-impl<'a> Subscriber<(ArrayView2<'a, f64>, ArrayView1<'a, i32>)> for CountsNode<'a> {
-    fn recieve_data(
-        &mut self,
-        data: Result<(ArrayView2<'a, f64>, ArrayView1<'a, i32>), CalcError>,
-    ) {
+impl<'a> Subscriber<RawDataValue<'a>> for CountsNode<'a> {
+    fn recieve_data(&mut self, data: Result<RawDataValue<'a>, CalcError>) {
         let res = match data {
-            Ok((_, ref y)) => self.index.compute(y),
+            Ok(data) => self
+                .index
+                .compute(&data.y)
+                .map(|v| CountsValue { val: Arc::new(v) }),
             Err(err) => Err(err),
         };
         self.sender.send_to_subscribers(res);

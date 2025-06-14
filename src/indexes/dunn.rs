@@ -1,19 +1,31 @@
 use crate::calc_error::CalcError;
-use ndarray::{ArcArray1, ArrayView1};
+use ndarray::{ArcArray1, Array1, ArrayView1};
 
 use crate::sender::{Sender, Subscriber};
 use std::iter::zip;
-#[derive(Clone, Copy, Debug)]
+use std::sync::Arc;
+
+use super::helpers::pairs_and_distances::PairsAndDistancesValue;
+#[derive(Clone, Debug)]
 pub struct DunnIndexValue {
-    pub val: f64,
+    pub val: Arc<Vec<f64>>,
 }
 #[derive(Default)]
 pub struct Index;
 impl Index {
     pub fn compute(
         &self,
-        pairs_in_the_same_cluster: &ArrayView1<i8>,
-        distances: &ArrayView1<f64>,
+        pairs_in_the_same_cluster: &Vec<Array1<i8>>,
+        distances: &Vec<Array1<f64>>,
+    ) -> Result<Vec<f64>, CalcError> {
+        zip(pairs_in_the_same_cluster, distances)
+            .map(|(p, d)| self.helper(p, d))
+            .collect()
+    }
+    fn helper(
+        &self,
+        pairs_in_the_same_cluster: &Array1<i8>,
+        distances: &Array1<f64>,
     ) -> Result<f64, CalcError> {
         let max_intracluster = zip(pairs_in_the_same_cluster, distances)
             .filter(|(i, _)| **i == 1)
@@ -27,34 +39,6 @@ impl Index {
             .ok_or("Can't find min intercluster distance")?;
         let val = min_intercluster / max_intracluster;
         Ok(val)
-        // let n = y.len() * (y.len() - 1) / 2;
-        // let mut intercluster_distances: Vec<f64> = Vec::with_capacity(n);
-        // let mut intracluster_distances: Vec<f64> = Vec::with_capacity(n);
-        //
-        // for (i, (row1, cluster1)) in zip(x.rows(), y).enumerate() {
-        //     for (j, (row2, cluster2)) in zip(x.rows(), y).enumerate() {
-        //         if i < j {
-        //             let dist = (&row2 - &row1).pow2().sum().sqrt();
-        //             if cluster1 == cluster2 {
-        //                 intracluster_distances.push(dist);
-        //             } else {
-        //                 intercluster_distances.push(dist);
-        //             }
-        //         }
-        //     }
-        // }
-        //
-        // let max_intracluster = intracluster_distances
-        //     .iter()
-        //     .max_by(|x, y| x.total_cmp(y))
-        //     .ok_or("Can't find max intracluster distance")?;
-        // let min_intercluster = intercluster_distances
-        //     .iter()
-        //     .min_by(|x, y| x.total_cmp(y))
-        //     .ok_or("Can't find min intercluster distance")?;
-        //
-        // let val = min_intercluster / max_intracluster;
-        // Ok(val)
     }
 }
 
@@ -72,13 +56,13 @@ impl<'a> Node<'a> {
     }
 }
 
-impl<'a> Subscriber<(ArcArray1<i8>, ArcArray1<f64>)> for Node<'a> {
-    fn recieve_data(&mut self, data: Result<(ArcArray1<i8>, ArcArray1<f64>), CalcError>) {
+impl<'a> Subscriber<PairsAndDistancesValue> for Node<'a> {
+    fn recieve_data(&mut self, data: Result<PairsAndDistancesValue, CalcError>) {
         let res = match data.as_ref() {
-            Ok((p, d)) => self
+            Ok(pd) => self
                 .index
-                .compute(&p.view(), &d.view())
-                .map(|val| DunnIndexValue { val }),
+                .compute(&pd.pairs, &pd.distances)
+                .map(|val| DunnIndexValue { val: Arc::new(val) }),
             Err(err) => Err(err.clone()),
         };
         self.sender.send_to_subscribers(res);

@@ -1,52 +1,44 @@
 use crate::calc_error::{CalcError, CombineErrors};
-use ndarray::{ArcArray1, ArrayView1, ArrayView2};
+use ndarray::Array1;
 use std::{iter::zip, sync::Arc};
 
 use crate::sender::{Sender, Subscriber};
 
-#[derive(Clone, Copy, Debug)]
+use super::helpers::{
+    pairs_and_distances::PairsAndDistancesValue, s_plus_and_minus::SPlusAndMinusValue,
+};
+
+#[derive(Clone, Debug)]
 pub struct GplusIndexValue {
-    pub val: f64,
+    pub val: Arc<Vec<f64>>,
 }
 #[derive(Default)]
 pub struct Index;
 impl Index {
     fn compute(
         &self,
-        pairs_in_the_same_cluster: &ArrayView1<i8>,
-        s_minus: usize,
+        pairs_in_the_same_cluster: &Vec<Array1<i8>>,
+        s_minus: &Vec<isize>,
+    ) -> Result<Vec<f64>, CalcError> {
+        zip(pairs_in_the_same_cluster, s_minus)
+            .map(|(pd, sm)| self.helper(pd, *sm))
+            .collect()
+    }
+    fn helper(
+        &self,
+        pairs_in_the_same_cluster: &Array1<i8>,
+        s_minus: isize,
     ) -> Result<f64, CalcError> {
         let nt = pairs_in_the_same_cluster.len() as f64;
         let value = 2. * s_minus as f64 / (nt * (nt - 1.0));
         Ok(value)
-
-        // let (pairs_in_the_same_cluster, distances) = pairs_and_distances;
-        // let mut s_minus = 0.0;
-        //
-        // // finding s_plus which represents the number of times a distance between two points
-        // // which belong to the same cluster is strictly smaller than the distance between two points not belonging to the same cluster
-        // // and s_minus which represents the number of times distance between two points lying in the same cluster  is strictly greater than a distance between two points not
-        // //belonging to the same cluster
-        //
-        // for (i, (d1, b1)) in zip(distances, pairs_in_the_same_cluster).enumerate() {
-        //     for (j, (d2, b2)) in zip(distances, pairs_in_the_same_cluster).enumerate() {
-        //         if i < j && (*b1 == 0 && *b2 == 1) && d1 > d2 {
-        //             s_minus += 1.0;
-        //         }
-        //     }
-        // }
-        //
-        // let (n, _) = x.dim();
-        // let n_t = n as f64 * (n as f64 - 1.) / 2.0;
-        // let value = 2. * s_minus / (n_t * (n_t - 1.0));
-        // Ok(value)
     }
 }
 
 pub struct Node<'a> {
     index: Index,
-    s_plus_and_minus: Option<Result<(usize, usize, usize), CalcError>>,
-    pairs_and_distances: Option<Result<(ArcArray1<i8>, ArcArray1<f64>), CalcError>>,
+    s_plus_and_minus: Option<Result<SPlusAndMinusValue, CalcError>>,
+    pairs_and_distances: Option<Result<PairsAndDistancesValue, CalcError>>,
     sender: Sender<'a, GplusIndexValue>,
 }
 
@@ -57,10 +49,10 @@ impl<'a> Node<'a> {
             self.pairs_and_distances.as_ref(),
         ) {
             let res = match s_plus_and_minus.combine(pairs_and_distances) {
-                Ok(((_, s_minus, _), (pairs, _))) => self
+                Ok((spm, pd)) => self
                     .index
-                    .compute(&pairs.view(), *s_minus)
-                    .map(|val| GplusIndexValue { val }),
+                    .compute(&pd.pairs, &spm.s_minus)
+                    .map(|val| GplusIndexValue { val: Arc::new(val) }),
                 Err(err) => Err(err),
             };
             self.sender.send_to_subscribers(res);
@@ -78,14 +70,14 @@ impl<'a> Node<'a> {
     }
 }
 
-impl<'a> Subscriber<(usize, usize, usize)> for Node<'a> {
-    fn recieve_data(&mut self, data: Result<(usize, usize, usize), CalcError>) {
+impl<'a> Subscriber<SPlusAndMinusValue> for Node<'a> {
+    fn recieve_data(&mut self, data: Result<SPlusAndMinusValue, CalcError>) {
         self.s_plus_and_minus = Some(data);
         self.process_when_ready();
     }
 }
-impl<'a> Subscriber<(ArcArray1<i8>, ArcArray1<f64>)> for Node<'a> {
-    fn recieve_data(&mut self, data: Result<(ArcArray1<i8>, ArcArray1<f64>), CalcError>) {
+impl<'a> Subscriber<PairsAndDistancesValue> for Node<'a> {
+    fn recieve_data(&mut self, data: Result<PairsAndDistancesValue, CalcError>) {
         self.pairs_and_distances = Some(data);
         self.process_when_ready();
     }

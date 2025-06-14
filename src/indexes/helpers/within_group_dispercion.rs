@@ -4,12 +4,15 @@ use crate::{
     sender::{Sender, Subscriber},
 };
 
-use ndarray::{ArcArray2, Array2, ArrayView1, ArrayView2};
+use ndarray::{ Array2, ArrayView1, ArrayView2};
 use std::iter::zip;
+
+use super::raw_data::RawDataValue;
+use std::sync::Arc;
 
 #[derive(Clone, Debug)]
 pub struct WGDValue {
-    pub val: ArcArray2<f64>,
+    pub val: Arc<Vec<Array2<f64>>>,
 }
 #[derive(Default)]
 pub struct WGD;
@@ -17,9 +20,19 @@ impl WGD {
     pub fn compute(
         &self,
         x: &ArrayView2<f64>,
-        y: &ArrayView1<i32>,
-        clusters_centroids: &ArrayView2<f64>,
-    ) -> Result<ArcArray2<f64>, CalcError> {
+        y: &ArrayView2<u32>,
+        clusters_centroids: &Vec<Array2<f64>>,
+    ) -> Result<Vec<Array2<f64>>, CalcError> {
+        zip(y.columns(), clusters_centroids)
+            .map(|(col, clscntrs)| self.helper(x, &col, &clscntrs))
+            .collect::<Result<Vec<Array2<f64>>, CalcError>>()
+    }
+    fn helper(
+        &self,
+        x: &ArrayView2<f64>,
+        y: &ArrayView1<u32>,
+        clusters_centroids: &Array2<f64>,
+    ) -> Result<Array2<f64>, CalcError> {
         let (n, d) = x.dim();
         let mut dif: Array2<f64> = Array2::zeros((n, d));
         for (i, (x, y)) in zip(x.rows(), y).enumerate() {
@@ -27,13 +40,13 @@ impl WGD {
             dif.row_mut(i).assign(&temp);
         }
         let wg = dif.t().dot(&dif);
-        Ok(wg.into_shared())
+        Ok(wg)
     }
 }
 pub struct WGDNode<'a> {
     index: WGD,
-    clusters_centroids: Option<Result<ArcArray2<f64>, CalcError>>,
-    raw_data: Option<Result<(ArrayView2<'a, f64>, ArrayView1<'a, i32>), CalcError>>,
+    clusters_centroids: Option<Result<ClustersCentroidsValue, CalcError>>,
+    raw_data: Option<Result<RawDataValue<'a>, CalcError>>,
     sender: Sender<'a, WGDValue>,
 }
 impl<'a> WGDNode<'a> {
@@ -50,10 +63,10 @@ impl<'a> WGDNode<'a> {
             (self.clusters_centroids.as_ref(), self.raw_data.as_ref())
         {
             let res = match clusters_centroids.combine(raw_data) {
-                Ok((cls_ctrs, (x, y))) => self
+                Ok((cls_ctrs, rd)) => self
                     .index
-                    .compute(x, y, &cls_ctrs.view())
-                    .map(|val| WGDValue { val }),
+                    .compute(&rd.x, &rd.y, &cls_ctrs.val)
+                    .map(|val| WGDValue { val: Arc::new(val) }),
                 Err(err) => Err(err),
             };
             self.sender.send_to_subscribers(res);
@@ -64,16 +77,13 @@ impl<'a> WGDNode<'a> {
 }
 impl<'a> Subscriber<ClustersCentroidsValue> for WGDNode<'a> {
     fn recieve_data(&mut self, data: Result<ClustersCentroidsValue, CalcError>) {
-        self.clusters_centroids = Some(data.map(|v| v.val));
+        self.clusters_centroids = Some(data);
         self.process_when_ready();
     }
 }
 
-impl<'a> Subscriber<(ArrayView2<'a, f64>, ArrayView1<'a, i32>)> for WGDNode<'a> {
-    fn recieve_data(
-        &mut self,
-        data: Result<(ArrayView2<'a, f64>, ArrayView1<'a, i32>), CalcError>,
-    ) {
+impl<'a> Subscriber<RawDataValue<'a>> for WGDNode<'a> {
+    fn recieve_data(&mut self, data: Result<RawDataValue<'a>, CalcError>) {
         self.raw_data = Some(data);
         self.process_when_ready();
     }

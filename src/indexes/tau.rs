@@ -1,11 +1,15 @@
+use super::helpers::pairs_and_distances::PairsAndDistancesValue;
+use super::helpers::s_plus_and_minus::SPlusAndMinusValue;
 use crate::calc_error::{CalcError, CombineErrors};
 use crate::sender::{Sender, Subscriber};
 use core::f64;
-use ndarray::{ArcArray1, ArrayView1};
+use ndarray::Array1;
+use std::iter::zip;
+use std::sync::Arc;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub struct TauIndexValue {
-    pub val: f64,
+    pub val: Arc<Vec<f64>>,
 }
 #[derive(Default)]
 pub struct Index;
@@ -13,60 +17,40 @@ pub struct Index;
 impl Index {
     pub fn compute(
         &self,
-        pairs_in_the_same_cluster: &ArrayView1<i8>,
-        s_plus: usize,
-        s_minus: usize,
-        ties: usize,
+        pairs_in_the_same_cluster: &Vec<Array1<i8>>,
+        s_plus: &Vec<isize>,
+        s_minus: &Vec<isize>,
+        ties: &Vec<isize>,
+    ) -> Result<Vec<f64>, CalcError> {
+        zip(zip(pairs_in_the_same_cluster, ties), zip(s_plus, s_minus))
+            .into_iter()
+            .map(|((p, t), (sp, sm))| self.helper(p, *sp, *sm, *t))
+            .collect()
+    }
+    fn helper(
+        &self,
+        pairs_in_the_same_cluster: &Array1<i8>,
+        s_plus: isize,
+        s_minus: isize,
+        ties: isize,
     ) -> Result<f64, CalcError> {
         let nt = pairs_in_the_same_cluster.len() as f64;
         let temp = nt * (nt - 1.) / 2.;
-        let value = (s_plus - s_minus) as f64 / (temp * (temp - ties as f64)).sqrt();
+
+        let nw = pairs_in_the_same_cluster
+            .iter()
+            .filter(|i| **i == 1)
+            .count() as f64;
+        let nb = nt - nw;
+        let value = (s_plus - s_minus) as f64 / (temp * nw * nb).sqrt();
         Ok(value)
-
-        // let nw = pairs_in_the_same_cluster
-        //     .iter()
-        //     .filter(|i| **i == 1)
-        //     .count() as f64;
-        // let nb = nt - nw;
-        // let value = (s_plus - s_minus) as f64 / (temp * nw * nb).sqrt();
-        // Ok(value)
-
-        // return Err(CalcError::from(format!("{pairs_and_distances:?}")));
-        // let (pairs_in_the_same_cluster, distances) = pairs_and_distances;
-        // let total_number_of_pairs = pairs_in_the_same_cluster.len();
-        // let (mut s_plus, mut s_minus): (usize, usize) = (0, 0);
-        //
-        // // finding s_plus which represents the number of times a distance between two points
-        // // which belong to the same cluster is strictly smaller than the distance between two points not belonging to the same cluster
-        // // and s_minus which represents the number of times distance between two points lying in the same cluster  is strictly greater than a distance between two points not
-        // // belonging to the same cluster
-        //
-        // for (d1, _) in zip(distances, pairs_in_the_same_cluster).filter(|(_, p)| **p == 0) {
-        //     let mut is_smaller = true;
-        //     for (d2, _) in zip(distances, pairs_in_the_same_cluster).filter(|(_, p)| **p == 1) {
-        //         is_smaller &= d2 < d1;
-        //     }
-        //     s_plus += is_smaller as usize;
-        //     s_minus += !is_smaller as usize;
-        // }
-        // // return Err(CalcError::from(format!("s+ {s_plus} s- {s_minus}")));
-        // let nw: usize = pairs_in_the_same_cluster
-        //     .iter()
-        //     .filter(|i| **i == 1)
-        //     .map(|f| *f as usize)
-        //     .sum();
-        // let nb: usize = total_number_of_pairs - nw;
-        // let v0 = (total_number_of_pairs * (total_number_of_pairs - 1)) as f64 / 2.0;
-        // // let value = (s_plus - s_minus) as f64 / ((v0 - t as f64) * v0).sqrt();
-        // let value = (s_plus - s_minus) as f64 / (nb as f64 * nw as f64 * v0).sqrt();
-        // Ok(value)
     }
 }
 
 pub struct Node<'a> {
     index: Index,
-    s_plus_and_minus: Option<Result<(usize, usize, usize), CalcError>>,
-    pairs_and_distances: Option<Result<(ArcArray1<i8>, ArcArray1<f64>), CalcError>>,
+    s_plus_and_minus: Option<Result<SPlusAndMinusValue, CalcError>>,
+    pairs_and_distances: Option<Result<PairsAndDistancesValue, CalcError>>,
     sender: Sender<'a, TauIndexValue>,
 }
 
@@ -77,10 +61,10 @@ impl<'a> Node<'a> {
             self.pairs_and_distances.as_ref(),
         ) {
             let res = match s_plus_and_minus.combine(pairs_and_distances) {
-                Ok(((s_plus, s_minus, ties), (pairs, _))) => self
+                Ok((spm, pd)) => self
                     .index
-                    .compute(&pairs.view(), *s_plus, *s_minus, *ties)
-                    .map(|val| TauIndexValue { val }),
+                    .compute(&pd.pairs, &spm.s_plus, &spm.s_minus, &spm.ties)
+                    .map(|val| TauIndexValue { val: Arc::new(val) }),
                 Err(err) => Err(err),
             };
             self.sender.send_to_subscribers(res);
@@ -98,14 +82,14 @@ impl<'a> Node<'a> {
     }
 }
 
-impl<'a> Subscriber<(usize, usize, usize)> for Node<'a> {
-    fn recieve_data(&mut self, data: Result<(usize, usize, usize), CalcError>) {
+impl<'a> Subscriber<SPlusAndMinusValue> for Node<'a> {
+    fn recieve_data(&mut self, data: Result<SPlusAndMinusValue, CalcError>) {
         self.s_plus_and_minus = Some(data);
         self.process_when_ready();
     }
 }
-impl<'a> Subscriber<(ArcArray1<i8>, ArcArray1<f64>)> for Node<'a> {
-    fn recieve_data(&mut self, data: Result<(ArcArray1<i8>, ArcArray1<f64>), CalcError>) {
+impl<'a> Subscriber<PairsAndDistancesValue> for Node<'a> {
+    fn recieve_data(&mut self, data: Result<PairsAndDistancesValue, CalcError>) {
         self.pairs_and_distances = Some(data);
         self.process_when_ready();
     }

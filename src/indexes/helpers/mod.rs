@@ -7,4 +7,5 @@ pub mod raw_data;
 pub mod s_plus_and_minus;
 pub mod scat;
 pub mod total_dispercion;
+pub mod wgs;
 pub mod within_group_dispercion;

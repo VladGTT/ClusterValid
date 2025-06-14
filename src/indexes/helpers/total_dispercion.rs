@@ -1,8 +1,10 @@
+use super::raw_data::RawDataValue;
 use crate::{
     calc_error::CalcError,
     sender::{Sender, Subscriber},
 };
-use ndarray::{ArcArray2, ArrayView1, ArrayView2, Axis};
+use ndarray::{ArcArray2, ArrayView2, Axis};
+use std::sync::Arc;
 
 #[derive(Clone, Debug)]
 pub struct TDValue {
@@ -29,13 +31,10 @@ impl<'a> TDNode<'a> {
     }
 }
 
-impl<'a> Subscriber<(ArrayView2<'a, f64>, ArrayView1<'a, i32>)> for TDNode<'a> {
-    fn recieve_data(
-        &mut self,
-        data: Result<(ArrayView2<'a, f64>, ArrayView1<'a, i32>), CalcError>,
-    ) {
+impl<'a> Subscriber<RawDataValue<'a>> for TDNode<'a> {
+    fn recieve_data(&mut self, data: Result<RawDataValue<'a>, CalcError>) {
         let res = match data {
-            Ok((x, _)) => self.index.compute(&x).map(|val| TDValue { val }),
+            Ok(rd) => self.index.compute(&rd.x).map(|val| TDValue { val }),
             Err(err) => Err(err),
         };
         self.sender.send_to_subscribers(res);

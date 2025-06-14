@@ -1,19 +1,19 @@
 [package]
-name = "rust-ext"
+name = "cluster-valid"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
-name = "rust_ext"
+name = "ClusterValid"
 crate-type = ["cdylib"]
 
 [dependencies]
 numpy = "0.22.1"
 ndarray = { version = "0.16.1", features = ["rayon"] }
-pyo3 = { version = "0.22.4", features = ["extension-module"] }
+pyo3 = { version = "0.22.4", features = ["extension-module","abi3-py37","generate-import-lib"] }
 itertools = "0.13.0"
-ndarray-linalg = { version = "0.16.0", features = ["openblas-static"] }
+ndarray-linalg = { version = "0.16.0", features = ["intel-mkl"] }
 rayon = "1.10.0"
 
 [patch.crates-io]
