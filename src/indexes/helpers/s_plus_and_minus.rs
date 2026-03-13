@@ -1,10 +1,9 @@
+use super::pairs_and_distances::PairsAndDistancesValue;
 use crate::calc_error::CalcError;
 use crate::sender::{Sender, Subscriber};
 use ndarray::Array1;
 use std::iter::zip;
 use std::sync::Arc;
-use std::cmp::Ordering;
-use super::pairs_and_distances::PairsAndDistancesValue;
 
 #[derive(Clone, Debug)]
 pub struct SPlusAndMinusValue {
@@ -41,70 +40,38 @@ impl Index {
         // // and s_minus which represents the number of times distance between two points lying in the same cluster  is strictly greater than a distance between two points not
         // //belonging to the same cluster
         //
-        // let (mut s_plus, mut s_minus, mut ties) = (0, 0, 0);
-        //
-        // for (&d1, &b1) in distances.iter().zip(pairs_in_the_same_cluster) {
-        //     if b1 == 1 {
-        //         for (&d2, &b2) in distances.iter().zip(pairs_in_the_same_cluster) {
-        //             if b2 == 0 {
-        //                 if d1 < d2 {
-        //                     s_plus += 1;
-        //                 } else if d1 > d2 {
-        //                     s_minus += 1;
-        //                 } else {
-        //                     ties += 1;
-        //                 }
-        //             }
-        //         }
-        //     }
-        // }
-        //
-        // Ok((s_plus, s_minus, ties))
-let mut s_plus = 0;
-    let mut s_minus = 0;
-    let mut ties = 0;
+        let mut cluster_distances: Vec<f64> = distances
+            .iter()
+            .zip(pairs_in_the_same_cluster.iter())
+            .filter(|(_, &label)| label == 1)
+            .filter_map(|(&dist, _)| if dist.is_finite() { Some(dist) } else { None })
+            .collect();
 
-    // Collect and sort distances
-    let mut cluster_distances: Vec<f64> = distances
-        .iter()
-        .zip(pairs_in_the_same_cluster.iter())
-        .filter_map(|(&dist, &label)| if label == 1 { Some(dist) } else { None })
-        .collect();
-    
-    let mut non_cluster_distances: Vec<f64> = distances
-        .iter()
-        .zip(pairs_in_the_same_cluster.iter())
-        .filter_map(|(&dist, &label)| if label == 0 { Some(dist) } else { None })
-        .collect();
-    
-    cluster_distances.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
-    non_cluster_distances.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
+        let mut non_cluster_distances: Vec<f64> = distances
+            .iter()
+            .zip(pairs_in_the_same_cluster.iter())
+            .filter(|(_, &label)| label == 0)
+            .filter_map(|(&dist, _)| if dist.is_finite() { Some(dist) } else { None })
+            .collect();
 
-    // Two-pointer approach for efficient comparison
-    let (mut i, mut j) = (0, 0);
-    let m = cluster_distances.len();
-    let n = non_cluster_distances.len();
+        cluster_distances.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
+        non_cluster_distances.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
 
-    while i < m && j < n {
-        match cluster_distances[i].partial_cmp(&non_cluster_distances[j]) {
-            Some(Ordering::Less) => {
-                s_plus += (n - j) as isize; // All remaining elements in non_cluster_distances are greater
-                i += 1;
-            }
-            Some(Ordering::Greater) => {
-                s_minus += (m - i) as isize; // All remaining elements in cluster_distances are greater
-                j += 1;
-            }
-            Some(Ordering::Equal) => {
-                ties += 1;
-                i += 1;
-                j += 1;
-            }
-            None => return Err("Comparison failed due to NaN values".to_string().into()),
+        let mut s_minus = 0;
+        let mut s_plus = 0;
+        let mut ties = 0;
+
+        for value_b in non_cluster_distances {
+            let lower_bound = cluster_distances.partition_point(|&x| x < value_b);
+
+            let upper_bound = cluster_distances.partition_point(|&x| x <= value_b);
+
+            s_plus += lower_bound;
+            ties += upper_bound - lower_bound;
+            s_minus += cluster_distances.len() - upper_bound;
         }
-    }
 
-    Ok((s_plus, s_minus, ties))
+        Ok((s_plus as isize, s_minus as isize, ties as isize))
     }
 }
 #[derive(Default)]
