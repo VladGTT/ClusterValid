@@ -7,7 +7,7 @@ use crate::{
 use itertools::izip;
 use ndarray::{Array2, ArrayView1, ArrayView2};
 
-use super::{counts, raw_data::RawDataValue};
+use super::raw_data::RawDataValue;
 use std::sync::Arc;
 
 #[derive(Clone, Debug)]

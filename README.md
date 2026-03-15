@@ -72,7 +72,7 @@
 <!-- [![Product Name Screen Shot][product-screenshot]](https://example.com) -->
 
 <!-- Here's a blank template to get started. To avoid retyping too much info, do a search and replace with your text editor for the following: `github_username`, `repo_name`, `twitter_handle`, `linkedin_username`, `email_client`, `email`, `project_title`, `project_description`, `project_license` -->
-ClusterValid is a Python library for internal clustering validation, designed to fill the gap left by the lack of comprehensive tools in Python compared to R. Built with a high-performance Rust core, ClusterValid supports the calculation of 30 internal clustering validity indices, enabling accurate and efficient evaluation of clustering results. The library has been inspired by R libraries NbClust & clusterCrit. ClusterValid is WIP so expect major API changes.
+ClusterValid is a Python library for internal clustering validation, designed to fill the gap left by the lack of comprehensive tools in Python compared to R. Built with a high-performance Rust core, ClusterValid supports the calculation of 31 internal clustering validity indices, enabling accurate and efficient evaluation of clustering results. The library has been inspired by R libraries NbClust & clusterCrit. ClusterValid is WIP so expect major API changes.
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
@@ -100,7 +100,7 @@ ClusterValid is a Python library for internal clustering validation, designed to
 | C-Index | c_index | Hubert, L. J., & Levin, J. R. (1976). A general statistical framework for assessing categorical clustering in free recall. *Psychological Bulletin*, 83(6), 1072–1080. https://doi.org/10.1037/0033-2909.83.6.1072 | 
 | Calinski-Harabasz | calinski_harabasz | Calinski, T., & Harabasz, J. (1974). A dendrite method for cluster analysis. *Communications in Statistics*, 3(1), 1–27. https://doi.org/10.1080/03610927408827101 | 
 | Cubic Clustering Criterion | ccc | Sarle, W. S. (1983). *SAS technical report A-108: Cubic clustering criterion.* SAS Institute Inc. | 
-| Davies-Bouldin | davies_bouldin | Davies, D. L., & Bouldin, D. W. (1979). A cluster separation measure. *IEEE Transactions on Pattern Analysis and Machine Intelligence*, 1(2), 224–227. https://doi.org/10.1109/TPAMI.1979.4766909 | 
+| Davies-Bouldin | davies_bouldin | Davies, D. L., & Bouldin, D. W. (1979). A cluster separation measure. *IEEE Transactions on Pattern Analysis and Machine Intelligence*, 1(2), 224–227. https://www.researchgate.net/publication/224377470_A_Cluster_Separation_Measure | 
 | DIndex | dindex | Lebart, L., Morineau, A., & Piron, M. (2000). *Statistique exploratoire multidimensionnelle.* Dunod | 
 | Dunn | dunn | Dunn, J. C. (1974). Well separated clusters and optimal fuzzy partitions. *Journal of Cybernetics*, 4(1), 95–104. https://doi.org/10.1080/01969727408546059 | 
 | Friedman-Rubin1 | friedman1 | Friedman, H. P., & Rubin, J. (1967). On some invariant criteria for grouping data. *Journal of the American Statistical Association*, 62(320), 1159–1178. https://doi.org/10.1080/01621459.1967.10500923 | 
@@ -115,17 +115,18 @@ ClusterValid is a Python library for internal clustering validation, designed to
 | PBM | pbm | Pakhira, M. K., Bandyopadhyay, S., & Maulik, U. (2004). Validity index for crisp and fuzzy clusters. *Pattern Recognition*, 37, 487–501. https://doi.org/10.1016/j.patcog.2003.06.005 | 
 | Point-biserial | ptbiserial | Milligan, G. W. (1981). A Monte Carlo study of thirty internal criterion measures for cluster analysis. *Psychometrika*, 46 (2), 187-199. https://doi.org/10.1007/BF02293899 | 
 | Ratkowsky-Lance | ratkowsky | Ratkowsky, D. A., & Lance, G. N. (1978). A criterion for determining the number of groups in a classification. *Australian Computer Journal*, 10(3), 115–117 | 
-| S_Dbw | sdbw | Halkidi, M., & Vazirgiannis, M. (2001). Clustering validity assessment: Finding the optimal partitioning of a data set. In *Proceedings 2001 IEEE International Conference on Data Mining* (pp. 187–194). IEEE. https://doi.org/10.1109/ICDM.2001.989517 | 
-| Scott-Symons2 | scott2 | Scott, A. J., & Symons, M. J. (1971). Clustering methods based on likelihood ratio criteria. *Biometrics*, 27(2), 387–397. https://doi.org/10.2307/2529003 | 
+| S_Dbw | sdbw | Halkidi, M., & Vazirgiannis, M. (2001). Clustering validity assessment: Finding the optimal partitioning of a data set. In *Proceedings 2001 IEEE International Conference on Data Mining* (pp. 187–194). IEEE. | 
+| Scott-Symons1 | scott1 | Todeschini, R., Ballabio, R., Termopoli, V., Consonni, V. (2024). Extended multivariate comparison of 68 cluster validity indices. A revie. *Chemometrics and Intelligent Laboratory Systems*, 251, 105117. https://doi.org/10.1016/j.chemolab.2024.105117 | 
+| Scott-Symons | scott2 | Scott, A. J., & Symons, M. J. (1971). Clustering methods based on likelihood ratio criteria. *Biometrics*, 27(2), 387–397. https://doi.org/10.2307/2529003 |
 | SD_Dis | sd_dis | Halkidi, M., Vazirgiannis, M., & Batistakis, Y. (2000). Quality scheme assessment in the clustering process. In *D. A. Zighed, J. Komorowski, & J. Żytkow (Eds.), Principles of data mining and knowledge discovery* (pp. 265–276). Springer Berlin Heidelberg. https://doi.org/10.1007/3-540-45372-5_26 | 
 | SD_Scat | sd_scat | Halkidi, M., Vazirgiannis, M., & Batistakis, Y. (2000). Quality scheme assessment in the clustering process. In *D. A. Zighed, J. Komorowski, & J. Żytkow (Eds.), Principles of data mining and knowledge discovery* (pp. 265–276). Springer Berlin Heidelberg. https://doi.org/10.1007/3-540-45372-5_26 | 
 | SF1 | sf1 | Saitta, S., Raphael, B., & Smith, I. F. C. (2007). A bounded index for cluster validity. In *P. Perner (Ed.), Machine learning and data mining in pattern recognition* (pp. 174–187). Springer Berlin Heidelberg. https://doi.org/10.1007/978-3-540-73499-4_14 | 
-| SF2 | sf2 | Saitta, S., Raphael, B., & Smith, I. F. C. (2008). A comprehensive validity index for clustering. *Intelligent Data Analysis*, 12(6), 529–548. https://doi.org/10.5555/1497136.1497138 | 
+| SF2 | sf2 | Saitta, S., Raphael, B., & Smith, I. F. C. (2008). A comprehensive validity index for clustering. *Intelligent Data Analysis*, 12(6), 529–548. https://doi.org/10.3233/IDA-2008-12602 | 
 | Silhouette | silhouette | Rousseeuw, P. J. (1987). Silhouettes: A graphical aid to the interpretation and validation of cluster analysis. *Journal of Computational and Applied Mathematics*, 20, 53–65. https://doi.org/10.1016/0377-0427(87)90125-7 | 
 | Tau | tau | Rohlf, F. J. (1974). Methods of comparing classifications. *Annual Review of Ecology, Evolution, and Systematics*, 5, 101–113. https://doi.org/10.1146/annurev.es.05.110174.000533;<br>Milligan, G. W. (1981). A Monte Carlo study of thirty internal criterion measures for cluster analysis. *Psychometrika*, 46 (2), 187-199. https://doi.org/10.1007/BF02293899 | 
 | TraceW | tracew | Edwards, A. W. F., & Cavalli-Sforza, L. L. (1965). A method for cluster analysis. *Biometrika*, 56, 362–375 | 
 | TrCovW | trcovw | Milligan, G. W., & Cooper, M. C. (1985). An examination of procedures for determining the number of clusters in a data set. *Psychometrika*, 50(2), 159–179. https://doi.org/10.1007/BF02294245 | 
-| Xie-Beni | xie_beni | Xie, X. L., & Beni, G. (1991). A validity measure for fuzzy clustering. *IEEE Transactions on Pattern Analysis and Machine Intelligence*, 13(8), 841–846. https://doi.org/10.1109/34.85677 |
+| Xie-Beni | xie_beni | Xie, X. L., & Beni, G. (1991). A validity measure for fuzzy clustering. *IEEE Transactions on Pattern Analysis and Machine Intelligence*, 13(8), 841–846. |
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -162,7 +163,7 @@ Before installing and using the library, make sure the following software is ins
       ```
 ### Installation from Precompiled Binaries
   1. Download the latest release
-  Go to the <a href="#">Releases page</a> and download the latest .zip archive
+  Go to the <a href="https://github.com/VladGTT/ClusterValid/releases">Releases page</a> and download the latest .zip archive
   2. Extract the archive  
   Unzip the downloaded file. You should see:
       * a .whl file (Python Wheel package)
@@ -197,6 +198,7 @@ indexes = [
     "calinski_harabasz",
     "friedman1", 
     "mariott", 
+    "scott1", 
     "scott2", 
     "friedman2",
     "tau", 
@@ -258,7 +260,6 @@ print(f"SF1: {val.sf1}")
 print(f"SF2: {val.sf2}")
 print(f"Dindex: {val.dindex}")
 
-
 ```
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -310,13 +311,6 @@ Distributed under the project_license. See `LICENSE.txt` for more information.
 <p align="right">(<a href="#readme-top">back to top</a>)</p> -->
 
 
-
-<!-- CONTACT -->
-## Authors
-  * Developed by Vladyslav Bozhko
-  * Supervised by Olga Matsuga, Oles Honchar Dnipro National University
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
 

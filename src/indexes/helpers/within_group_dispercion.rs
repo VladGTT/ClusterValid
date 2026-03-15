@@ -4,7 +4,7 @@ use crate::{
     sender::{Sender, Subscriber},
 };
 
-use ndarray::{ Array2, ArrayView1, ArrayView2};
+use ndarray::{Array2, ArrayView1, ArrayView2};
 use std::iter::zip;
 
 use super::raw_data::RawDataValue;

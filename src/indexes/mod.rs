@@ -13,22 +13,23 @@ pub mod ptbiserial; //tested
 pub mod ratkowsky; //tested
 pub mod rubin; //tested
 pub mod scott; //tested
+pub mod scott2;
 pub mod silhouette; //tested
 pub mod tau; //tested
 pub mod tracew; //tested
-                
-pub mod xiebeni;
+
 pub mod ccc; //tested
 pub mod hubert; //tested
 pub mod sd_dis; //tested
 pub mod sdbw; //tested
-pub mod trcovw; //tested
-                
+pub mod trcovw;
+pub mod xiebeni; //tested
+
 pub mod dindex; //tested
 pub mod frey; //tested
 pub mod hartigan; //tested
 pub mod kl; //tested
-//
+            //
 pub mod pbm;
 pub mod sf;
 pub mod sf2;

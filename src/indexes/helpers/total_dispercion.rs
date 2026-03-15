@@ -4,7 +4,6 @@ use crate::{
     sender::{Sender, Subscriber},
 };
 use ndarray::{ArcArray2, ArrayView2, Axis};
-use std::sync::Arc;
 
 #[derive(Clone, Debug)]
 pub struct TDValue {
