@@ -56,7 +56,7 @@
       </ul>
     </li>
     <li><a href="#usage">Usage</a></li>
-    <li><a href="#authors">Authors</a></li>
+    <!-- <li><a href="#authors">Authors</a></li> -->
     <!-- <li><a href="#roadmap">Roadmap</a></li>
     <li><a href="#contributing">Contributing</a></li>
     <li><a href="#license">License</a></li>
@@ -240,6 +240,7 @@ print(f"Dunn: {val.dunn}")
 print(f"Silhouette: {val.silhouette}")
 print(f"Friedman1: {val.friedman1}")
 print(f"Mariott: {val.mariott}")
+print(f"Scott1: {val.scott1}")
 print(f"Scott2: {val.scott2}")
 print(f"Friedman2: {val.friedman2}")
 print(f"Tau: {val.tau}")
