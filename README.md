@@ -101,7 +101,6 @@ ClusterValid is a Python library for internal clustering validation, designed to
 | Calinski-Harabasz | calinski_harabasz | Calinski, T., & Harabasz, J. (1974). A dendrite method for cluster analysis. *Communications in Statistics*, 3(1), 1–27. https://doi.org/10.1080/03610927408827101 | 
 | Cubic Clustering Criterion | ccc | Sarle, W. S. (1983). *SAS technical report A-108: Cubic clustering criterion.* SAS Institute Inc. | 
 | Davies-Bouldin | davies_bouldin | Davies, D. L., & Bouldin, D. W. (1979). A cluster separation measure. *IEEE Transactions on Pattern Analysis and Machine Intelligence*, 1(2), 224–227. https://www.researchgate.net/publication/224377470_A_Cluster_Separation_Measure | 
-| DIndex | dindex | Lebart, L., Morineau, A., & Piron, M. (2000). *Statistique exploratoire multidimensionnelle.* Dunod | 
 | Dunn | dunn | Dunn, J. C. (1974). Well separated clusters and optimal fuzzy partitions. *Journal of Cybernetics*, 4(1), 95–104. https://doi.org/10.1080/01969727408546059 | 
 | Friedman-Rubin1 | friedman1 | Friedman, H. P., & Rubin, J. (1967). On some invariant criteria for grouping data. *Journal of the American Statistical Association*, 62(320), 1159–1178. https://doi.org/10.1080/01621459.1967.10500923 | 
 | Friedman-Rubin2 | friedman2 | Friedman, H. P., & Rubin, J. (1967). On some invariant criteria for grouping data. *Journal of the American Statistical Association*, 62(320), 1159–1178. https://doi.org/10.1080/01621459.1967.10500923 | 

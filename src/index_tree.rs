@@ -172,7 +172,7 @@ impl IndexTreeReturnValue {
             .transpose()
     }
     #[getter]
-    fn get_friedman1(&self) -> Result<Option<Vec<f64>>, CalcError> {
+    fn get_friedman2(&self) -> Result<Option<Vec<f64>>, CalcError> {
         self.rubin
             .clone()
             .map(|f| f.map(|v| (*v.val).clone()))
@@ -201,7 +201,7 @@ impl IndexTreeReturnValue {
             .transpose()
     }
     #[getter]
-    fn get_friedman2(&self) -> Result<Option<Vec<f64>>, CalcError> {
+    fn get_friedman1(&self) -> Result<Option<Vec<f64>>, CalcError> {
         self.friedman
             .clone()
             .map(|f| f.map(|v| (*v.val).clone()))
@@ -663,7 +663,6 @@ impl<'a> IndexTreeBuilder<'a> {
             .retval
             .clone()]))));
         self.wgs_sender.add_subscriber(scott.clone());
-        self.td_sender.add_subscriber(scott.clone());
 
         self.counts_sender.add_subscriber(scott);
         self
@@ -838,9 +837,7 @@ impl<'a> IndexTreeBuilder<'a> {
             .retval
             .clone()]))));
 
-        self.raw_data_sender.add_subscriber(ccc.clone());
-        self.wg_sender.add_subscriber(ccc.clone());
-        self.td_sender.add_subscriber(ccc);
+        self.raw_data_sender.add_subscriber(ccc);
         self
     }
     pub fn finish(mut self) -> IndexTree<'a> {

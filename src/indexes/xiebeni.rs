@@ -1,14 +1,13 @@
-use crate::calc_error::{CalcError,CombineErrors};
+use crate::calc_error::{CalcError, CombineErrors};
 use itertools::izip;
-use ndarray::{ArcArray1, Array1,Array2, ArrayView1};
+use ndarray::Array2;
 
 use crate::sender::{Sender, Subscriber};
 use std::f64;
-use std::{fmt::format, iter::zip};
 use std::sync::Arc;
 
-use super::helpers::clusters_centroids::{self, ClustersCentroidsValue};
-use super::helpers::{counts::CountsValue, pairs_and_distances::{self, PairsAndDistancesValue}, within_group_dispercion::WGDValue};
+use super::helpers::clusters_centroids::ClustersCentroidsValue;
+use super::helpers::{counts::CountsValue, within_group_dispercion::WGDValue};
 #[derive(Clone, Debug)]
 pub struct XieBeniIndexValue {
     pub val: Arc<Vec<f64>>,
@@ -22,30 +21,29 @@ impl Index {
         wg: &Vec<Array2<f64>>,
         counts: &Vec<Vec<usize>>,
     ) -> Result<Vec<f64>, CalcError> {
-        izip!(clusters_centroids,wg,counts)
-            .map(|(clc,w,c)| self.helper(clc,w,c))
+        izip!(clusters_centroids, wg, counts)
+            .map(|(clc, w, c)| self.helper(clc, w, c))
             .collect()
     }
     fn helper(
         &self,
         clusters_centroids: &Array2<f64>,
         wg: &Array2<f64>,
-        counts: &Vec<usize>
+        counts: &Vec<usize>,
     ) -> Result<f64, CalcError> {
-
         let n = counts.iter().sum::<usize>() as f64;
         let mut min_dist = f64::MAX;
-        for (i,c1) in clusters_centroids.rows().into_iter().enumerate(){
-            for (j,c2) in clusters_centroids.rows().into_iter().enumerate(){
-                if i<j{
-                    let dist = (&c1-&c2).pow2().sum();
-                    if dist<min_dist{
+        for (i, c1) in clusters_centroids.rows().into_iter().enumerate() {
+            for (j, c2) in clusters_centroids.rows().into_iter().enumerate() {
+                if i < j {
+                    let dist = (&c1 - &c2).pow2().sum();
+                    if dist < min_dist {
                         min_dist = dist;
                     }
-                }   
+                }
             }
         }
-        let val = wg.diag().sum()/min_dist/n;
+        let val = wg.diag().sum() / min_dist / n;
         Ok(val)
     }
 }
@@ -69,13 +67,15 @@ impl<'a> Node<'a> {
         }
     }
     fn process_when_ready(&mut self) {
-        if let (Some(clusters_centroids), Some(wg),Some(counts)) =
-            (self.clusters_centroids.as_ref(), self.wg.as_ref(),self.counts.as_ref())
-        {
+        if let (Some(clusters_centroids), Some(wg), Some(counts)) = (
+            self.clusters_centroids.as_ref(),
+            self.wg.as_ref(),
+            self.counts.as_ref(),
+        ) {
             let res = match clusters_centroids.combine(wg).combine(counts) {
-                Ok(((clc, wg),counts)) => self
+                Ok(((clc, wg), counts)) => self
                     .index
-                    .compute(&clc.val, &wg.val,&counts.val)
+                    .compute(&clc.val, &wg.val, &counts.val)
                     .map(|val| XieBeniIndexValue { val: Arc::new(val) }),
                 Err(err) => Err(err),
             };
@@ -84,7 +84,6 @@ impl<'a> Node<'a> {
             self.clusters_centroids = None;
         }
     }
-
 }
 
 impl<'a> Subscriber<WGDValue> for Node<'a> {
@@ -106,4 +105,3 @@ impl<'a> Subscriber<CountsValue> for Node<'a> {
         self.process_when_ready();
     }
 }
-

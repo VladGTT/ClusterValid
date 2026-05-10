@@ -1,15 +1,13 @@
 use std::f64;
 use std::sync::Arc;
 
-use crate::calc_error::{CalcError, CombineErrors};
+use crate::calc_error::CalcError;
 use crate::sender::{Sender, Subscriber};
 use itertools::izip;
-use ndarray::{ ArcArray2, Array1, Array2, ArrayView1, ArrayView2};
+use ndarray::{Array1, Array2, ArrayView1, ArrayView2};
 use ndarray_linalg::{Eig, Inverse, Scalar};
 
 use super::helpers::raw_data::RawDataValue;
-use super::helpers::total_dispercion::TDValue;
-use super::helpers::within_group_dispercion::WGDValue;
 
 #[derive(Clone, Debug)]
 pub struct CCCIndexValue {
@@ -19,24 +17,10 @@ pub struct CCCIndexValue {
 pub struct Index;
 
 impl Index {
-    pub fn compute(
-        &self,
-        x: &ArrayView2<f64>,
-        y: &ArrayView2<u32>,
-        wg: &Vec<Array2<f64>>,
-        td: &ArcArray2<f64>,
-    ) -> Result<Vec<f64>, CalcError> {
-        izip!(y.columns(), wg)
-            .map(|(c, w)| self.helper(x, &c, &w.view(), &td.view()))
-            .collect()
+    pub fn compute(&self, x: &ArrayView2<f64>, y: &ArrayView2<u32>) -> Result<Vec<f64>, CalcError> {
+        izip!(y.columns()).map(|c| self.helper(x, &c)).collect()
     }
-    pub fn helper(
-        &self,
-        x: &ArrayView2<f64>,
-        y: &ArrayView1<u32>,
-        wg: &ArrayView2<f64>,
-        td: &ArrayView2<f64>,
-    ) -> Result<f64, CalcError> {
+    pub fn helper(&self, x: &ArrayView2<f64>, y: &ArrayView1<u32>) -> Result<f64, CalcError> {
         let n = x.nrows();
         let p = x.ncols();
         let q = (*y.iter().max().ok_or("Cant find max")? + 1) as usize;
@@ -62,18 +46,18 @@ impl Index {
         };
         let (p_star, u) = {
             let vv = s_view.product();
-            let c = (vv as f64 /q as f64).powf(1./p as f64);
-            let u = &s_view / &(Array1::from_elem(s_view.len(),c)).view();
-            let k1 = u.iter().filter(|i|**i>=1.).count();
-            let p_star = k1.min(q-1);
+            let c = (vv as f64 / q as f64).powf(1. / p as f64);
+            let u = &s_view / &(Array1::from_elem(s_view.len(), c)).view();
+            let k1 = u.iter().filter(|i| **i >= 1.).count();
+            let p_star = k1.min(q - 1);
 
             let mut v1 = 1.;
-            for i in 0..p_star{
-                v1=v1*s_view[i]; 
+            for i in 0..p_star {
+                v1 = v1 * s_view[i];
             }
-            let c = (v1/q as f64).powf(1./p_star as f64);
-            let u = &s_view / &(Array1::from_elem(s_view.len(),c)).view(); 
-            (p_star,u)
+            let c = (v1 / q as f64).powf(1. / p_star as f64);
+            let u = &s_view / &(Array1::from_elem(s_view.len(), c)).view();
+            (p_star, u)
         };
         // return Err(CalcError::from(format!("{p} {u}")));
         let temp = {
@@ -95,8 +79,6 @@ impl Index {
 pub struct Node<'a> {
     index: Index,
     raw_data: Option<Result<RawDataValue<'a>, CalcError>>,
-    wg: Option<Result<WGDValue, CalcError>>,
-    td: Option<Result<TDValue, CalcError>>,
     sender: Sender<'a, CCCIndexValue>,
 }
 
@@ -105,42 +87,23 @@ impl<'a> Node<'a> {
         Self {
             index: Index,
             raw_data: None,
-            wg: None,
-            td: None,
             sender,
         }
     }
     fn process_when_ready(&mut self) {
-        if let (Some(raw_data), Some(wg), Some(td)) =
-            (self.raw_data.as_ref(), self.wg.as_ref(), self.td.as_ref())
-        {
-            let res = match raw_data.combine(wg).combine(td) {
-                Ok(((rd, wg), td)) => self
+        if let Some(raw_data) = self.raw_data.as_ref() {
+            let res = match raw_data {
+                Ok(rd) => self
                     .index
-                    .compute(&rd.x, &rd.y, &wg.val, &td.val)
+                    .compute(&rd.x, &rd.y)
                     .map(|val| CCCIndexValue { val: Arc::new(val) }),
-                Err(err) => Err(err),
+                Err(err) => Err(err.clone()),
             };
             self.sender.send_to_subscribers(res);
-            self.wg = None;
-            self.td = None;
         }
     }
 }
 
-impl<'a> Subscriber<WGDValue> for Node<'a> {
-    fn recieve_data(&mut self, data: Result<WGDValue, CalcError>) {
-        self.wg = Some(data);
-        self.process_when_ready();
-    }
-}
-
-impl<'a> Subscriber<TDValue> for Node<'a> {
-    fn recieve_data(&mut self, data: Result<TDValue, CalcError>) {
-        self.td = Some(data);
-        self.process_when_ready();
-    }
-}
 impl<'a> Subscriber<RawDataValue<'a>> for Node<'a> {
     fn recieve_data(&mut self, data: Result<RawDataValue<'a>, CalcError>) {
         self.raw_data = Some(data);

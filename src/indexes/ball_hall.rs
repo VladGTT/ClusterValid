@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
+use super::helpers::counts::CountsValue;
+use super::helpers::within_group_dispercion::WGDValue;
 use crate::calc_error::{CalcError, CombineErrors};
 use crate::sender::{Sender, Subscriber};
 use itertools::izip;
 use ndarray::Array2;
-use super::helpers::counts::CountsValue;
-use super::helpers::within_group_dispercion::WGDValue;
 #[derive(Clone, Debug)]
 pub struct BallHallIndexValue {
     pub val: Arc<Vec<f64>>,
@@ -23,7 +23,12 @@ impl Index {
             .collect()
     }
     fn helper(&self, wg: &Array2<f64>, cnts: &[usize]) -> Result<f64, CalcError> {
-        let trace_wg = wg.diag().sum();
+        let trace_wg = wg
+            .diag()
+            .iter()
+            .zip(cnts)
+            .map(|(a, b)| *a / *b as f64)
+            .sum::<f64>();
         let q = cnts.len();
         Ok(trace_wg / q as f64)
     }

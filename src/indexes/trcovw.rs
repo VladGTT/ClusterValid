@@ -14,9 +14,9 @@ impl Index {
         wg.into_iter().map(|w| self.helper(w)).collect()
     }
     fn helper(&self, wg: &Array2<f64>) -> Result<f64, CalcError> {
-        let var = wg.var_axis(Axis(0), 0.);
+        let var = wg.var_axis(Axis(0), 1.);
         let val = var.sum();
-        Ok(val * 2.)
+        Ok(val)
     }
 }
 pub struct Node<'a> {
